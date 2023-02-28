@@ -1,0 +1,2 @@
+nbdev
+git+https://github.com/timeseriesAI/tsai.git

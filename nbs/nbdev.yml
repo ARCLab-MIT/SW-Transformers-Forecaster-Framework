@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "sw-driver-forecaster"
+  site-url: "https://arclab.github.io/sw-driver-forecaster"
+  description: "Forecasting Space Weather Drivers"
+  repo-branch: main
+  repo-url: "https://github.com/arclab/sw-driver-forecaster"
