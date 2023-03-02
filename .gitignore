@@ -1,3 +1,6 @@
+# Ignore the folder .Trash-1000
+.Trash-1000
+
 _docs/
 _proc/
 
