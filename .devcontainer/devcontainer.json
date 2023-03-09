@@ -62,8 +62,8 @@
 		}
 	},
 	// Use GPUs
-	"runArgs": ["--env-file", ".devcontainer/devcontainer.env", 
-				"--gpus", "all"]
+	"runArgs": ["--env-file", ".devcontainer/devcontainer.env"]
+				//"--gpus", "all"]
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	//"postCreateCommand": "pip install --user -r requirements.txt"
