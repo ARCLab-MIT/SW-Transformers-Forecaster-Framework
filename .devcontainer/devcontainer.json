@@ -55,6 +55,7 @@
 		"git": "latest",
 		"ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {},
 		"ghcr.io/devcontainers/features/python:1": {
+			"installTools": false, // TODO: Enabling this causes the container to fail to build
 			"installJupyterlab": true
 		},
 		"ghcr.io/devcontainers/features/nvidia-cuda:1": {

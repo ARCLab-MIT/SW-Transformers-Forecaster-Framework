@@ -1,0 +1,19 @@
+method: grid
+metric:
+  goal: minimize
+  name: valid_loss
+name: lookback_sweep
+parameters:
+  lookback:
+    distribution: categorical
+    values:
+      - 6
+      - 12
+      - 18
+      - 24
+      - 30
+      - 36
+      - 42
+      - 48
+      - 54
+      - 60
