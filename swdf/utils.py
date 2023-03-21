@@ -80,13 +80,14 @@ def plot_forecast_2(X_true, y_true, y_pred, dtms=None, sel_vars=None, idx=None, 
 
 
 # %% ../nbs/utils.ipynb 5
-def plot_solar_algorithm_performance(df, var, figsize=(10, 10), ylims_mean=None, ylims_std=None):
+def plot_solar_algorithm_performance(df, var, figsize=(10, 10), ylims_mean=None, 
+                                     ylims_std=None):
     # Plot a grid where each row is a solar activity level, and each column
     # is a error type (sfu or percent). Each cell is the result of calling the 
     # function plot_fe.
     # Input:
     # df: dataframe with the results of the forecasting experiment, with the columns
-    #     variable, condition, horizon, µ_sfu, σ_sfu, µ_percent, σ_percent
+    #     variable, condition, horizon, mean_sfu, std_sfu, mean_percent, std_percent
     # var: variable to plot (F10, S10, M10, Y10)
     # figsize: figure size
     # ylims_mean: List with the y limits of the mean for each error type: 
@@ -102,13 +103,13 @@ def plot_solar_algorithm_performance(df, var, figsize=(10, 10), ylims_mean=None,
         for idx, err_type in enumerate(['percent', 'sfu']):
             df_var = df[(df['variable'] == var) & (df['condition'] == sal)]
             # Minimum and maximum values across column
-            min_val_mean = df[f'µ_{err_type}'].min() if ylims_mean is None else ylims_mean[idx][0]
-            max_val_mean = df[f'µ_{err_type}'].max() if ylims_mean is None else ylims_mean[idx][1]
-            min_val_std = df[f'σ_{err_type}'].min() if ylims_std is None else ylims_std[idx][0]
-            max_val_std = df[f'σ_{err_type}'].max() if ylims_std is None else ylims_std[idx][1]
+            min_val_mean = df[f'mean_{err_type}'].min() if ylims_mean is None else ylims_mean[idx][0]
+            max_val_mean = df[f'mean_{err_type}'].max() if ylims_mean is None else ylims_mean[idx][1]
+            min_val_std = df[f'std_{err_type}'].min() if ylims_std is None else ylims_std[idx][0]
+            max_val_std = df[f'std_{err_type}'].max() if ylims_std is None else ylims_std[idx][1]
 
-            mean_fe = df_var[f'µ_{err_type}'].values
-            std_fe = df_var[f'σ_{err_type}'].values
+            mean_fe = df_var[f'mean_{err_type}'].values
+            std_fe = df_var[f'std_{err_type}'].values
             ax = axs[sal_idx, idx]
             ax.plot(mean_fe, color='#000000')
             ax.set_xlabel('Days from Epoch')
