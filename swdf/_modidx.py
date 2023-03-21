@@ -5,4 +5,6 @@ d = { 'settings': { 'branch': 'main',
                 'doc_host': 'https://arclab.github.io',
                 'git_url': 'https://github.com/arclab/sw-driver-forecaster',
                 'lib_path': 'swdf'},
-  'syms': {'swdf.utils': {'swdf.utils.plot_forecast_2': ('utils.html#plot_forecast_2', 'swdf/utils.py')}}}
+  'syms': { 'swdf.utils': { 'swdf.utils.plot_forecast_2': ('utils.html#plot_forecast_2', 'swdf/utils.py'),
+                            'swdf.utils.plot_solar_algorithm_performance': ( 'utils.html#plot_solar_algorithm_performance',
+                                                                             'swdf/utils.py')}}}
