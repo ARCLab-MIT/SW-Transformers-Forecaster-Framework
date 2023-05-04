@@ -13,7 +13,7 @@ init_weights: True  # Kaiming init weights
 lookback: 36 
 lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
 n_epoch: 5 # Number of epochs to train for
-partial_n: null
+partial_n: null # null uses all training set, float in [0,1] uses a percentage, list filters valid too
 use_wandb: False # To use it, the environment variable WANDB_API_KEY must be set
 wandb_group: null # Useful to group runs that belong to the same optuna study
 wandb_mode: 'offline' # 'online' or 'offline' for wandb
