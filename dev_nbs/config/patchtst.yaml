@@ -1,12 +1,12 @@
 attn_dropout: 0.0 # dropout applied to the attention weights
-d_model: 256 # dimension of model
-d_ff: 256 # dimension of fully connected network
+d_model: 512 # dimension of model
+d_ff: 2048 # dimension of fully connected network
 decomposition: True # apply decomposition (Autoformer)
 dropout: 0.0 # dropout applied to all linear layers in the encoder except q,k&v projections
-individual: False # head: one linear layer per channel (true) or one per all channels (false, default)
-n_layers: 5 # number of encoder layers
-n_heads: 16 # number of heads
+individual: True # head: one linear layer per channel (true) or one per all channels (false, default)
+n_layers: 3 # number of encoder layers
+n_heads: 8 # number of heads
 padding_patch: True # padding_patch
-patch_len: 9 # length of the patch applied to the time series to create patches. 
+patch_len: 16 # length of the patch applied to the time series to create patches. 
 revin: True # Use revin (reverse instance normalization). Doesn't work if c_in != c_out
-stride: 1  # stride used when creating patches
+stride: 8  # stride used when creating patches
