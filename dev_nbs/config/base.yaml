@@ -1,17 +1,17 @@
 arch_name: "PatchTST" # See `all_arch_names` in tsasi
-bs: 16 # Batch size
+bs: 128 # Batch size
 horizon: 6 # same as paper by Licata et al. (2020)
-init_weights: True  # Kaiming init weights
+init_weights: False  # Kaiming init weights
 lookback: 36 
 lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
-n_epoch: 5 # Number of epochs to train for
+n_epoch: 50 # Number of epochs to train for
 partial_n: .1 # null uses all training set, float in [0,1] uses a percentage, list filters valid too
 seed: 42 # Random seed (null for random)
 test_start_datetime: '2012-10-01' # Benchmark test set by Licata et al. (2020)
 test_end_datetime: '2018-12-31' # Benchmark test set by Licata et al. (2020)
-use_wandb: False # To use it, the environment variable WANDB_API_KEY must be set
+use_wandb: True # To use it, the environment variable WANDB_API_KEY must be set
 valid_start_datetime: '2018-01-01'
 wandb_group: null # Useful to group runs that belong to the same optuna study
 wandb_log_learner: True # Log learner to wandb
-wandb_mode: 'online' # 'online' or 'offline' for wandb
+wandb_mode: 'offline' # 'online' or 'offline' for wandb
 wandb_project: 'swdf' # Name of wandb project

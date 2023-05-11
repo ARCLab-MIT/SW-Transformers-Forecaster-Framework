@@ -8,6 +8,7 @@ d = { 'settings': { 'branch': 'main',
   'syms': { 'swdf.benchmark': { 'swdf.benchmark.forecast_error': ('benchmark.html#forecast_error', 'swdf/benchmark.py'),
                                 'swdf.benchmark.percent_forecast_error': ('benchmark.html#percent_forecast_error', 'swdf/benchmark.py')},
             'swdf.utils': { 'swdf.utils.bold_best': ('utils.html#bold_best', 'swdf/utils.py'),
+                            'swdf.utils.convert_uuids_to_indices': ('utils.html#convert_uuids_to_indices', 'swdf/utils.py'),
                             'swdf.utils.plot_forecast_2': ('utils.html#plot_forecast_2', 'swdf/utils.py'),
                             'swdf.utils.plot_solar_algorithm_performance': ( 'utils.html#plot_solar_algorithm_performance',
                                                                              'swdf/utils.py')}}}
