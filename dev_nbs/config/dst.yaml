@@ -9,7 +9,7 @@ train:
     data_path: '../data/DST_IAGA2002.txt'
   horizon: 144 # default: 6 days * 24 values per day (144)
   lookback: 432 #  default = 3*horizon
-  partial_n: null
+  partial_n: 0.001
 
 ####################
 ## Eval
@@ -18,7 +18,7 @@ eval:
   dst_data_path: '../data/DST_IAGA2002.txt' # SAME USED TO TRAIN THE LEARNER!
   # Path to learner wandb artifact to load (project/entity/run/artifact:version)
   # If null, the learner in the local tmp folder will be used
-  learner_artifact: vrodriguezf90/swdf/Dst:v0
+  learner_artifact: null
   round_preds: True # Round predictions to the nearest integer
   # Path to the F10.7 data
   solfsmy_data_path: '../data/SOLFSMY.TXT'
