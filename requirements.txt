@@ -3,3 +3,4 @@ git+https://github.com/vrodriguezf/tsai.git@dev
 wandb
 optuna
 papermill
+seaborn
