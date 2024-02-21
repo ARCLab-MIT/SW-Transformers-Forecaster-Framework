@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 from fastcore.all import *
 import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 # %% ../nbs/utils.ipynb 3
 def plot_forecast_2(X_true, y_true, y_pred, dtms=None, sel_vars=None, idx=None, figsize=(8, 4), n_samples=1):

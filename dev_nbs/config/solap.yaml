@@ -3,27 +3,22 @@
 ####################
 train:
   add_time_channels: False # Add time channels to the data (year, day of year)
-  data_columns_fcst: # Columns to use for forecasting
-    - F10
-    - S10
-    - M10
-    - Y10
-  data_url: 'https://sol.spacenvironment.net/jb2008/indices/SOLFSMY.TXT'
-  data_path: '../data/SOLFSMY.TXT'
-  bs: 32
+  solap:
+    data_url: null
+    data_path: '../data/SOLRESAP.TXT'
+  horizon: 48 # default: 6 days * 8 values per day
+  lookback: 144 #  default = 3*horizon
+  partial_n: 0.001
 
 ####################
 ## Eval
 ####################
 eval:
-  # Path to learner wandb artifact to load (project/entity/run/artifact:version)
-  # If null, the learner in the local tmp folder will be used
-  # learner_artifact: "vrodriguezf90/swdf/solfsmy:latest"
-  dst_data_path: '../data/DST_IAGA2002.txt' # SAME USED TO TRAIN THE LEARNER!
+  solap_data_path: '../data/SOLRESAP.TXT' # SAME USED TO TRAIN THE LEARNER!
   # Path to learner wandb artifact to load (project/entity/run/artifact:version)
   # If null, the learner in the local tmp folder will be used
   learner_artifact: null
   round_preds: True # Round predictions to the nearest integer
   # Path to the F10.7 data
   solfsmy_data_path: '../data/SOLFSMY.TXT'
-  
+  timestep: 3 # Data points every 3 hours
