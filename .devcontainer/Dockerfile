@@ -9,19 +9,20 @@ ARG NODE_VERSION="none"
 RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
 
 # [Optional] Allowing the non-root vscode user to pip install globally without sudo
-# ENV PIP_TARGET=/usr/local/pip-global
-# ENV PYTHONPATH=${PIP_TARGET}:${PYTHONPATH}
-# ENV PATH=${PIP_TARGET}/bin:${PATH}
-# RUN if ! cat /etc/group | grep -e "^pip-global:" > /dev/null 2>&1; then groupadd -r pip-global; fi \
-#     && usermod -a -G pip-global vscode \
-#     && umask 0002 && mkdir -p ${PIP_TARGET} \
-#     && chown :pip-global ${PIP_TARGET} \
-#     && ( [ ! -f "/etc/profile.d/00-restore-env.sh" ] || sed -i -e "s/export PATH=/export PATH=\/usr\/local\/pip-global:/" /etc/profile.d/00-restore-env.sh )
+ # ENV PIP_TARGET=/usr/local/pip-global
+ # ENV PYTHONPATH=${PIP_TARGET}:${PYTHONPATH}
+ # ENV PATH=${PIP_TARGET}/bin:${PATH}
+ # RUN if ! cat /etc/group | grep -e "^pip-global:" > /dev/null 2>&1; then groupadd -r pip-global; fi \
+ #     && usermod -a -G pip-global vscode \
+ #     && umask 0002 && mkdir -p ${PIP_TARGET} \
+ #     && chown :pip-global ${PIP_TARGET} \
+ #     && ( [ ! -f "/etc/profile.d/00-restore-env.sh" ] || sed -i -e "s/export PATH=/export PATH=\/usr\/local\/pip-global:/" /etc/profile.d/00-restore-env.sh )
 
 # [Optional] If your pip requirements rarely change, uncomment this section to add them to the image.
 COPY requirements.txt /tmp/pip-tmp/
 RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt \
     && rm -rf /tmp/pip-tmp
+RUN if [[ls -la /dev | grep -iqE 'nvidia|amd|radeon']]; then --gpus all; else echo "no gpus detected"; fi 
 
 # [Optional] Uncomment this section to install additional OS packages.
 # RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \

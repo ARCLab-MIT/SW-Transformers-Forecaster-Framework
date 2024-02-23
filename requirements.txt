@@ -1,5 +1,5 @@
 nbdev
-git+https://github.com/vrodriguezf/tsai.git@dev
+git+https://github.com/timeseriesAI/tsai
 wandb
 optuna
 papermill
