@@ -64,10 +64,11 @@
 			"installCudnn": true
 		}
 	},
-	  // "runArgs": ["--env-file", ".devcontainer/devcontainer.env"]
-	 "initializeCommand": "if [ $(ls -la /dev | grep -iqE 'nvidia|radeon' | echo $?) -eq 0 ]; then   export EXISTS_GPU; else echo 'No GPUs detected.' >&2; fi",
+	
+	// Check if a GPU is available in the host machine and if so, pass the --gpus all flag to the docker run command
+	"initializeCommand": "if [ $(ls -la /dev | grep -iqE 'nvidia|radeon' | echo $?) -eq 0 ]; then export EXISTS_GPU; else echo 'No GPUs detected.' >&2; fi",
+	"runArgs": ["--env-file", ".devcontainer/devcontainer.env", "${localEnv: EXISTS_GPU:--gpus}","${localEnv: EXISTS_GPU:all}"]
 
-	  "runArgs": ["--env-file", ".devcontainer/devcontainer.env", "${localEnv: EXISTS_GPU:--gpus}","${localEnv: EXISTS_GPU:all}"] // For machines with GPUs
 	// Use 'postCreateCommand' to run commands after the container is created.
 	//"postCreateCommand": "pip install --user -r requirements.txt"
 }
