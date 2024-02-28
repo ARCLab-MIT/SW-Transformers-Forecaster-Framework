@@ -186,3 +186,13 @@ def convert_uuids_to_indices():
     if uuids:
         indices = [str(i) for i in range(len(uuids))]
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(indices)
+
+# %% ../nbs/utils.ipynb 11
+def get_classified_columns(df_raw, thresholds):
+    data_columns = ['F10', 'S10', 'M10', 'Y10']
+
+    for column in data_columns:
+        bins = pd.IntervalIndex.from_tuples(thresholds[column])
+        df_raw[f'{column}_Cat'] = np.array([0,1,2,3])[pd.cut(df_raw[column], bins = bins).cat.codes]
+    data_columns_cat = ['F10_Cat', 'S10_Cat', 'Y10_Cat', 'M10_Cat']
+    return df_raw
