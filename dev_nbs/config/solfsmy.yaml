@@ -27,3 +27,9 @@ eval:
   # Path to the F10.7 data
   solfsmy_data_path: '../data/SOLFSMY.TXT'
   
+####################
+## F10.7 Historical Values
+####################
+data:
+  dataF107_url: 'https://www.ngdc.noaa.gov/stp/space-weather/solar-data/solar-features/solar-radio/noontime-flux/penticton/penticton_adjusted/listings/listing_drao_noontime-flux-adjusted_daily.txt'
+  dataF107_path: '../data/SOLF107_HistoricalValues.txt' 
