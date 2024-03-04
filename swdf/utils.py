@@ -188,11 +188,63 @@ def convert_uuids_to_indices():
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(indices)
 
 # %% ../nbs/utils.ipynb 11
-def get_classified_columns(df_raw, thresholds):
-    data_columns = ['F10', 'S10', 'M10', 'Y10']
+#|export
+def get_classified_columns (df: pd.DataFrame, thresholds:dict):
+    """
+    Creates classified columns based on predefined ranges for specified columns in the DataFrame.
 
-    for column in data_columns:
-        bins = pd.IntervalIndex.from_tuples(thresholds[column])
-        df_raw[f'{column}_Cat'] = np.array([0,1,2,3])[pd.cut(df_raw[column], bins = bins).cat.codes]
-    data_columns_cat = ['F10_Cat', 'S10_Cat', 'Y10_Cat', 'M10_Cat']
-    return df_raw
+    Args:
+        df (pd.DataFrame): The input DataFrame.
+
+    Returns:
+        pd.DataFrame: The DataFrame with classification classification of each column.
+
+    """
+    columns_to_classify = df.columns.intersection(thresholds.keys())
+    solact_levels = ['low', 'moderate', 'elevated', 'high'] 
+
+    if columns_to_classify.empty:
+        return df
+    else:
+        df_cat = pd.DataFrame()
+        for column in columns_to_classify:
+            # ranges tuples come as strings in the yaml file, so we need to convert them to tuples with eval
+            bins = pd.IntervalIndex.from_tuples(thresholds[column])
+            df_cat[f'{column}_Cat'] = np.array(solact_levels)[pd.cut(df[column], bins=bins).cat.codes]
+        return df_cat
+
+# %% ../nbs/utils.ipynb 13
+def get_F10_historical_distribution(thresholds:dict):  
+  """
+  Calculate the distribution of F10.7 values from historical data.
+
+  Returns:
+  dict: A dictionary containing the normalized value counts of F10.7 values and its categories.
+  """
+
+  data = config.data
+
+
+  # From here we will extract the data of F10.7 to check its distribution
+  fnameF107_historical = data.dataF107_path if data.dataF107_url is None else download_data(data.dataF107_url,
+                                                                              fname=data.dataF107_path)
+
+  # Only two columns in the file: Date and F10.7.
+  df_F10 = pd.read_csv(
+            fnameF107_historical, delim_whitespace=True, comment='#', header=None, 
+            names=['Date', 'F10'], 
+            parse_dates=['Date'], 
+            na_values=[".", "+"], 
+            dtype={'F10': float}
+          )  
+
+  # Data preprocessing 
+  # Remove the first rows with missing values
+  df_F10 = df_F10[((df_F10['Date'] >= '1947-02-14') & (df_F10['Date'] < '1997-01-01'))]
+
+  # Fill the missing values with the average of the previous and next value
+  df_F10['F10'] = ((df_F10['F10'].fillna(method='ffill')) + df_F10['F10'].fillna(method='bfill'))/2
+
+  df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds)['F10_Cat'])
+  value = df_F107_cat.value_counts(normalize=True).to_dict()
+  return value
