@@ -248,3 +248,7 @@ def get_F10_historical_distribution(thresholds:dict):
   df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds)['F10_Cat'])
   value = df_F107_cat.value_counts(normalize=True).to_dict()
   return value
+
+# %% ../nbs/utils.ipynb 15
+def euclidean_distance_dict(X:dict, Y:dict):
+    return math.sqrt(sum((X.get(d,0) - Y.get(d,0))**2 for d in set(X) | set(Y)))
