@@ -252,3 +252,48 @@ def get_F10_historical_distribution(thresholds:dict):
 # %% ../nbs/utils.ipynb 15
 def euclidean_distance_dict(X:dict, Y:dict):
     return math.sqrt(sum((X.get(d,0) - Y.get(d,0))**2 for d in set(X) | set(Y)))
+
+# %% ../nbs/utils.ipynb 17
+def find_closest_distribution(df_cat, target_distribution, segment_size, val_size):
+       """
+    Finds the combination of segments in the categorical data that is closest to the target distribution.
+
+    Parameters:
+    df_cat (pd.Series): A pandas Series containing the categorical data.
+    target_distribution (dict): The target distribution to compare against, given as a dictionary where keys are categories and values are their target proportions.
+    segment_size (int): The size of each segment to split the data into.
+    val_size (float): The proportion of the validation split.
+
+    Returns:
+    best_combination (tuple): The indices of the segments that form the closest combination to the target distribution.
+    segments (list): The list of segments created from the data.
+    distribution_found (dict): The distribution of categories in the best combination of segments.
+    """
+    idxs = list(df_cat.index)
+    segments = np.array_split(idxs, len(df_cat) // segment_size)
+
+    value_counts = [df_cat[segments[i]].value_counts().to_dict() for i in range(len(segments))]
+
+    num_segments = int(len(segments)*(val_size))
+    print(f"Total number of segments:{ len(segments)}, Number of segments for validation: {num_segments} ({num_segments/len(segments)*100:.2f}%)")
+
+    
+    best_combination = None
+    best_distance = np.inf
+    distribution_found = None
+    comb = combinations(range(len(value_counts)), num_segments)
+    for c in tqdm(comb):
+        values = Counter({})
+        for i in c:
+            values = values + Counter(value_counts[i])
+        total = sum(values.values(), 0.0)
+        distribution = {k: v / total for k, v in values.items()}
+        
+        distance = euclidean_distance_dict(distribution, target_distribution)
+
+        if distance < best_distance:
+            best_distance = distance
+            best_combination = c
+            distribution_found = distribution
+    print("The closest group of segments to F10.7 categories has an euclidean distance of", best_distance)
+    return best_combination, segments, distribution_found
