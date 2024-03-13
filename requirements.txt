@@ -4,3 +4,4 @@ wandb
 optuna
 papermill
 seaborn
+more-itertools
