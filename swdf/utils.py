@@ -93,8 +93,7 @@ def plot_forecast_2(X_true, y_true, y_pred, dtms=None, sel_vars=None, idx=None, 
 
 
 # %% ../nbs/utils.ipynb 5
-def plot_solar_algorithm_performance(df, var, figsize=(10, 10), ylims_mean=None, 
-                                     ylims_std=None):
+def plot_solar_algorithm_performance(df, var, figsize=(10, 10), ylims=None):
     # Plot a grid where each row is a solar activity level, and each column
     # is a error type (sfu or percent). Each cell is the result of calling the 
     # function plot_fe.
@@ -116,30 +115,28 @@ def plot_solar_algorithm_performance(df, var, figsize=(10, 10), ylims_mean=None,
         for idx, err_type in enumerate(['percent', 'sfu']):
             df_var = df[(df['variable'] == var) & (df['condition'] == sal)]
             # Minimum and maximum values across column
-            min_val_mean = df[f'mean_{err_type}'].min() if ylims_mean is None else ylims_mean[idx][0]
-            max_val_mean = df[f'mean_{err_type}'].max() if ylims_mean is None else ylims_mean[idx][1]
-            min_val_std = df[f'std_{err_type}'].min() if ylims_std is None else ylims_std[idx][0]
-            max_val_std = df[f'std_{err_type}'].max() if ylims_std is None else ylims_std[idx][1]
+            min_val = df[f'mean_{err_type}'].min() - np.abs(df[f'std_{err_type}'].max()) if ylims is None else ylims[idx][0]
+            max_val = df[f'mean_{err_type}'].max() + np.abs(df[f'std_{err_type}'].max()) if ylims is None else ylims[idx][1]
+
 
             mean_fe = df_var[f'mean_{err_type}'].values
             std_fe = df_var[f'std_{err_type}'].values
             ax = axs[sal_idx, idx]
-            ax.plot(mean_fe, color='#000000')
+            p1 = ax.plot(mean_fe, color='#000000', label='Mean')
             ax.set_xlabel('Days from Epoch')
             ax.set_ylabel(f'Mean [{err_type}]', color='#000000')
             ax.tick_params(axis='y', labelcolor='#000000')
             ax.set_xticks(range(len(mean_fe)))
             ax.set_xticklabels(range(1, len(mean_fe)+1))
-            ax.set_ylim(min_val_mean, max_val_mean)
-            ax2 = ax.twinx()
-            ax2.plot(std_fe, color='tab:red')
-            ax2.set_ylabel(f'STD [{err_type}]', color='tab:red')
-            ax2.set_ylim(min_val_std, max_val_std)
-            ax2.tick_params(axis='y', labelcolor='tab:red')
-            # ax2.set_xticks(range(len(std_fe)))
-            # ax2.set_xticklabels(range(1, len(std_fe)+1))
+            ax.set_ylim(min_val, max_val)
+            ax.set_yticks(np.arange(-20, 21, 5))
+            ax.fill_between(range(len(mean_fe)), mean_fe - np.abs(std_fe), mean_fe + np.abs(std_fe), color='red', alpha=0.2)
+
+            p2 = ax.fill(np.NaN, np.NaN, 'red', alpha=0.5)
+            ax.legend([p1[0], p2[0]], ['Mean Error', '[STDE]'], loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=2, fancybox=True, shadow=True)
+            
             n_samples = df_var['n_samples'].values[0] 
-            ax.set_title(f'{sal}\n{n_samples} forecasts')
+            ax.set_title(f'{sal}\n{n_samples} forecasts', pad=15)
             # Draw a grid in the background
             ax.grid(True, which='both', axis='both', color='lightgrey',
                     linestyle='-', linewidth=0.5)
