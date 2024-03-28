@@ -11,11 +11,15 @@ from tsai.basics import *
 
 
 # %% ../nbs/losses.ipynb 2
-class Loss():
+class Loss:
     def __init__(self, ranges, weights, device):
         self.device = device
         self.ranges = torch.Tensor(ranges).to(device)
         self.weights = torch.Tensor(weights).to(device)
+
+    def set_weights(self, weights):
+        self.weights = torch.Tensor(weights).to(device)
+
     
     def weighted_loss_tensor(self, target):
         batch, variables, horizon = target.shape # Shape (32, 4, 6)
@@ -49,21 +53,30 @@ class wMAELoss(nn.Module, Loss):
         return torch.mean(self.weighted_loss_tensor(y_true) * torch.abs(y_pred - y_true)).cpu()
 
 # %% ../nbs/losses.ipynb 5
-class LossMetrics():
-    def __init__(self, loss:Loss, ranges, weights, device):
-        self.ranges = ranges
-        self.weights = weights
-        self.loss = loss
-        self.device = device
-    
-    def mse_loss_low(self, input, target):
-        return self.loss(self.ranges, weights=[self.weights[0],0,0,0], device=self.device).forward(input, target)
-    def mse_loss_moderate(self, input, target):
-        return self.loss(self.ranges, weights=[0, self.weights[1],0,0], device=self.device).forward(input, target)
-    def mse_loss_elevated(self, input, target):
-        return self.loss(self.ranges, weights=[0,0,self.weights[2],0], device=self.device).forward(input, target)
-    def mse_loss_high(self, input, target):
-        return self.loss(self.ranges, weights=[0,0,0,self.weights[3]], device=self.device).forward(input, target)
+class LossMetrics:
+    def __init__(self, loss_func:Loss):
+        self.loss_func = loss_func
+
+    def loss_call(self, input, target, weight_idx):
+        loss_copy = deepcopy(self.loss_func)
+
+        weights = torch.zeros(len(loss_copy.weights))
+        weights[weight_idx] = loss_copy.weights[weight_idx]
+        loss_copy.set_weights(weights)
+        
+        return loss_copy.forward(input, target)
+
+    def loss_low(self, input, target):
+        return self.loss_call(input, target, 0)
+
+    def loss_moderate(self, input, target):
+        return self.loss_call(input, target, 1)
+
+    def loss_elevated(self, input, target):
+        return self.loss_call(input, target, 2)
+
+    def loss_high(self, input, target):
+        return self.loss_call(input, target, 3)
 
     def metrics(self):
-        return [self.mse_loss_low, self.mse_loss_moderate, self.mse_loss_elevated, self.mse_loss_high]
+        return [self.loss_low, self.loss_moderate, self.loss_elevated, self.loss_high]
