@@ -11,48 +11,56 @@ from tsai.basics import *
 
 
 # %% ../nbs/losses.ipynb 2
-class Loss:
-    def __init__(self, ranges, weights, device):
-        self.device = device
-        self.ranges = torch.Tensor(ranges).to(device)
-        self.weights = torch.Tensor(weights).to(device)
+class Loss(nn.Module):
+    def __init__(self, ranges, weights):
+        super().__init__()
+        self.register_buffer('ranges', torch.Tensor(ranges))
+        self.register_buffer('weights', torch.Tensor(weights))
 
     def set_weights(self, weights):
-        self.weights = torch.Tensor(weights).to(device)
+        self.weights = torch.Tensor(weights).to(self.weights.device)
 
-    
-    def weighted_loss_tensor(self, target):
-        batch, variables, horizon = target.shape # Shape (32, 4, 6)
-        variable, range, interval = self.ranges.shape # Shape (4, 4, 2)
+    def weighted_loss_tensor(self, target):        
+        batch, variables, horizon = target.shape  # Shape (32, 4, 6)
+        variable, range, interval = self.ranges.shape  # Shape (4, 4, 2)
 
-        target_shaped = torch.reshape(target, (batch, variables, 1, horizon)) # Shape (32, 4, 6) -> (32, 4, 1, 6)
-        ranges_shaped = torch.reshape(self.ranges, (variable, range, 1, interval)) # Shape (4, 4, 2) -> (4, 4, 1, 2)
+        target_shaped = torch.reshape(target, (batch, variables, 1, horizon))  # Shape (32, 4, 6) -> (32, 4, 1, 6)
+        ranges_shaped = torch.reshape(self.ranges, (variable, range, 1, interval))  # Shape (4, 4, 2) -> (4, 4, 1, 2)
 
-        weights_tensor = (1 + ((ranges_shaped[..., 0] <= target_shaped) * (target_shaped <= ranges_shaped[...,1]))).float().to(self.device)
+        weights_tensor = ((ranges_shaped[..., 0] <= target_shaped) & (target_shaped <= ranges_shaped[..., 1])).float()
         
         return torch.einsum('r,bvrh->bvh', self.weights, weights_tensor)
-
-# %% ../nbs/losses.ipynb 3
-class wMSELoss(nn.Module, Loss):
-    def __init__(self, ranges, weights, device):
-        nn.Module.__init__(self)
-        Loss.__init__(self ,ranges, weights, device)
-
+    
+    def loss_measure(self, y_pred, y_true):
+        # Define the actual loss measure here
+        return torch.abs(y_pred - y_true)  # Example: L1 loss
     
     def forward(self, y_pred, y_true):
-        return torch.mean(self.weighted_loss_tensor(y_true) * (y_pred - y_true) ** 2).cpu()
+        error = self.loss_measure(y_pred, y_true)
+        weights = self.weighted_loss_tensor(y_true)
+        loss = (error * weights).mean()
+        
+        return loss
 
 # %% ../nbs/losses.ipynb 4
-class wMAELoss(nn.Module, Loss):
-    def __init__(self, ranges, weights, device):
-        nn.Module.__init__(self)
-        Loss.__init__(self ,ranges, weights, device)
+class wMSELoss(Loss):
+    def __init__(self, ranges, weights):
+        super().__init__(ranges, weights)
 
     
-    def forward(self, y_pred, y_true):
-        return torch.mean(self.weighted_loss_tensor(y_true) * torch.abs(y_pred - y_true)).cpu()
+    def loss_measure(self, y_pred, y_true):
+        return (y_true-y_pred)**2
 
 # %% ../nbs/losses.ipynb 5
+class wMAELoss(Loss):
+    def __init__(self, ranges, weights):
+        super().__init__(ranges, weights)
+
+    
+    def loss_measure(self, y_pred, y_true):
+        return torch.abs(y_true-y_pred)
+
+# %% ../nbs/losses.ipynb 7
 class LossMetrics:
     def __init__(self, loss_func:Loss):
         self.loss_func = loss_func
