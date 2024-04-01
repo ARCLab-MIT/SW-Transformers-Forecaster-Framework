@@ -29,7 +29,19 @@ class Loss(nn.Module):
         
         return torch.einsum('r,bvrh->bvh', self.weights, weights_tensor)
     
-    def loss_call(self, input, target, weight_idx):
+    def loss_measure(self, y_pred, y_true):
+        return NotImplementedError
+    
+    def forward(self, y_pred, y_true):
+        error = self.loss_measure(y_pred, y_true)
+        weights = self.weighted_loss_tensor(y_true)
+        loss = (error * weights).mean()
+        
+        return loss
+    
+
+    # Metrics
+    def _loss_call(self, input, target, weight_idx):
         loss_copy = deepcopy(self)
         
         for i in range(len(loss_copy.weights)):
@@ -41,20 +53,14 @@ class Loss(nn.Module):
     def metrics(self):
         metrics = []
         for i, name in enumerate(['low', 'moderate', 'elevated', 'high']):
-            metric = lambda input, target, i=i: self.loss_call(input, target, i)
-            metric.__name__ = name
-            metrics.append(metric)
-        return metrics
-    
-    def loss_measure(self, y_pred, y_true):
-        return NotImplementedError
-    
-    def forward(self, y_pred, y_true):
-        error = self.loss_measure(y_pred, y_true)
-        weights = self.weighted_loss_tensor(y_true)
-        loss = (error * weights).mean()
+            def make_metric(self, input, target, i=i):
+                return self._loss_call(input, target, i)
+            
+            make_metric.__name__ = name
+            metric_func = types.MethodType(make_metric, self)
+            metrics.append(metric_func)
         
-        return loss
+        return metrics
 
 # %% ../nbs/losses.ipynb 4
 class wMSELoss(Loss):
