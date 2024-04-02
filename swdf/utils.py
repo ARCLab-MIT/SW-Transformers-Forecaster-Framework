@@ -2,8 +2,9 @@
 
 # %% auto 0
 __all__ = ['config', 'plot_forecast_2', 'plot_solar_algorithm_performance', 'plot_solar_algorithm_performance_comparison',
-           'bold_best', 'convert_uuids_to_indices', 'get_classified_columns', 'clean_f10_values',
-           'get_F10_historical_distribution', 'euclidean_distance_dict', 'find_closest_distribution']
+           'bold_best', 'convert_uuids_to_indices', 'create_latex_comparison_tables', 'get_classified_columns',
+           'clean_f10_values', 'get_F10_historical_distribution', 'euclidean_distance_dict',
+           'find_closest_distribution']
 
 # %% ../nbs/utils.ipynb 2
 import numpy as np
@@ -276,6 +277,71 @@ def convert_uuids_to_indices():
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(indices)
 
 # %% ../nbs/utils.ipynb 11
+def _highlight_better_values(df, our_col, paper_col, stat):
+    return np.where(
+        np.abs(df[our_col][stat]) < np.abs(df[paper_col][stat]),
+        '\\textbf{' + df[our_col][stat].astype(str) + '}',
+        df[our_col][stat].astype(str)
+    )
+
+def create_latex_comparison_tables(results_df, forecast_variables, forecast_horizon):
+    """
+    Generates LaTeX tables comparing our model's forecast results with a reference paper.
+
+    Parameters:
+    - results_df (pd.DataFrame): DataFrame containing 'variable', 'condition', 'horizon', 'statistic', 'value_ours', 'value_paper'.
+    - forecast_variables (list of str): List of forecast variables to include.
+    - forecast_horizon (int): Number of forecast days.
+
+    Example:
+    create_comparison_tables(results_df, ['var1', 'var2'], 1)
+    """
+    reshaped_df = results_df.pivot_table(
+        index=['variable', 'condition', 'horizon'],
+        columns='statistic',
+        values=['value_ours', 'value_paper']
+    )
+
+    # Highlight better mean and std values
+    reshaped_df[('value_ours', 'mean_str')] = _highlight_better_values(reshaped_df, 'value_ours', 'value_paper', 'mean')
+    reshaped_df[('value_ours', 'std_str')] = _highlight_better_values(reshaped_df, 'value_ours', 'value_paper', 'std')
+    reshaped_df[('value_paper', 'mean_str')] = _highlight_better_values(reshaped_df, 'value_paper', 'value_ours', 'mean')
+    reshaped_df[('value_paper', 'std_str')] = _highlight_better_values(reshaped_df, 'value_paper', 'value_ours', 'std')
+
+    # Drop the original mean and std columns
+    reshaped_df = reshaped_df.drop(columns=[('value_ours', 'mean'), ('value_ours', 'std'),
+                                            ('value_paper', 'mean'), ('value_paper', 'std')])
+
+    # Combine mean and std into a single column
+    reshaped_df[('value_ours', 'mean ± std')] = reshaped_df[('value_ours', 'mean_str')] + ' ± ' + reshaped_df[('value_ours', 'std_str')]
+    reshaped_df[('value_paper', 'mean ± std')] = reshaped_df[('value_paper', 'mean_str')] + ' ± ' + reshaped_df[('value_paper', 'std_str')]
+
+    # Drop the intermediate string columns
+    reshaped_df = reshaped_df.drop(columns=[('value_ours', 'mean_str'), ('value_ours', 'std_str'),
+                                            ('value_paper', 'mean_str'), ('value_paper', 'std_str')])
+
+    # Clean up column levels
+    reshaped_df.columns = reshaped_df.columns.droplevel(0)
+    reshaped_df.columns = ['NN', 'benchmark']
+    reshaped_df = reshaped_df.reset_index()
+
+    # Sort conditions
+    reshaped_df['condition'] = pd.Categorical(reshaped_df['condition'], categories=['low', 'moderate', 'elevated', 'high'], ordered=True)
+    reshaped_df = reshaped_df.sort_values(by=['variable', 'condition'])
+
+    # Print LaTeX tables for each variable
+    for variable in forecast_variables:
+        variable_df = reshaped_df[reshaped_df['variable'] == variable].drop(columns='variable')
+        latex_table = variable_df.to_latex(
+            index=False, 
+            escape=False,
+            column_format='|l|' + '|c|' * forecast_horizon,
+            caption=f'Comparison of the results of the paper with the results of our model for the variable {variable}',
+            label=f'tab:comparison_{variable}'
+        )
+        print(latex_table)
+
+# %% ../nbs/utils.ipynb 13
 def get_classified_columns (df: pd.DataFrame, thresholds:dict):
     """
     Creates classified columns based on predefined ranges for specified columns in the DataFrame.
@@ -300,7 +366,7 @@ def get_classified_columns (df: pd.DataFrame, thresholds:dict):
             df_cat[f'{column}_Cat'] = np.array(solact_levels)[pd.cut(df[column], bins=bins).cat.codes]
         return df_cat
 
-# %% ../nbs/utils.ipynb 13
+# %% ../nbs/utils.ipynb 15
 def clean_f10_values(value):
     try:
         # Remove any trailing '+' using regex and convert to float
@@ -346,12 +412,12 @@ def get_F10_historical_distribution(thresholds:dict):
   
   return value
 
-# %% ../nbs/utils.ipynb 15
+# %% ../nbs/utils.ipynb 17
 def euclidean_distance_dict(X:dict, Y:dict):
     return math.sqrt(sum((X.get(d,0) - Y.get(d,0))**2 for d in set(X) | set(Y)))
 
 
-# %% ../nbs/utils.ipynb 17
+# %% ../nbs/utils.ipynb 19
 def find_closest_distribution(df_cat, target_distribution, segment_size, val_size):
     """
     Finds the combination of segments in the categorical data that is closest to the target distribution.
