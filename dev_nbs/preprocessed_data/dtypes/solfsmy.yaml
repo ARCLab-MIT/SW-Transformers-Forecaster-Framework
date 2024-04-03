@@ -1,0 +1,16 @@
+Year: int16
+DDD: int16
+JulianDay: float32
+F10: float32
+F81c: float32
+S10: float32
+S81c: float32
+M10: float32
+M81c: float32
+Y10: float32
+Y81c: float32
+Ssrc: category
+Ssrc_F10: category
+Ssrc_S10: category
+Ssrc_M10: category
+Ssrc_Y10: category
