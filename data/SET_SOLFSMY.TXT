@@ -1,4 +1,4 @@
-# Data extracted from SET, used in Licata et al. (2020) (https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2020SW002496)
+#Data extracted from SET, used in Licata et al. (2020) (https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2020SW002496)
 
 201209010000 2012 245 00 00 2456171.50000 119.9  97.7 137.4 118.0 143.0 124.9 130.5 121.0   6    6   0 I
 201209010300 2012 245 03 00 2456171.62500 119.9  97.7 137.4 118.0 143.0 124.9 130.5 121.0   6   14   0 I
