@@ -5,7 +5,7 @@ horizon: 6 # same as paper by Licata et al. (2020)
 init_weights: False  # Kaiming init weights
 lookback: 36 
 lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
-n_epoch: 5 # Number of epochs to train for
+n_epoch: 30 # Number of epochs to train for
 partial_n: .1 # null uses all training set, float in [0,1] uses a percentage, list filters valid too
 seed: 42 # Random seed (null for random)
 test_start_datetime: '2012-10-01 12:00:00' # Benchmark test set by Licata et al. (2020)
