@@ -13,12 +13,9 @@ class PersistenceModel(nn.Module):
         Initialize the PersistenceModel.
 
         Parameters:
-        - c_in (int): Number of input channels/features (not used directly).
-        - c_out (int): The output size, i.e., the horizon of the forecast.
-        - seq_len (int): Length of the input sequence (not used directly).
-        - pred_dim (int): Number of predictive dimensions (not used directly).
-        - kwargs: Additional keyword arguments for future flexibility.
+        - horizon: int, the number of future time steps to predict.
         """
+
         super(PersistenceModel, self).__init__()
         self.horizon = horizon
 
