@@ -9,8 +9,7 @@ import numpy as np
 import pandas as pd
 from tsai.basics import *
 
-
-# %% ../nbs/losses.ipynb 2
+# %% ../nbs/losses.ipynb 3
 class Loss(nn.Module):
     def __init__(self, ranges, weights, solact_levels):
         super().__init__()
@@ -39,7 +38,7 @@ class Loss(nn.Module):
         
         return loss
 
-# %% ../nbs/losses.ipynb 4
+# %% ../nbs/losses.ipynb 5
 class wMSELoss(Loss):
     def __init__(self, ranges, weights, solact_levels):
         super().__init__(ranges, weights, solact_levels)
@@ -48,7 +47,7 @@ class wMSELoss(Loss):
     def loss_measure(self, y_pred, y_true):
         return (y_true-y_pred)**2
 
-# %% ../nbs/losses.ipynb 5
+# %% ../nbs/losses.ipynb 6
 class wMAELoss(Loss):
     def __init__(self, ranges, weights, solact_levels):
         super().__init__(ranges, weights, solact_levels)
@@ -57,46 +56,47 @@ class wMAELoss(Loss):
     def loss_measure(self, y_pred, y_true):
         return torch.abs(y_true-y_pred)
 
-# %% ../nbs/losses.ipynb 6
+# %% ../nbs/losses.ipynb 7
 class wMSLELoss(Loss):
     def __init__(self, ranges, weights, solact_levels):
         super().__init__(ranges, weights, solact_levels)
     
     def loss_measure(self, y_pred, y_true):
-        return ((torch.log1p(y_true) - torch.log1p(y_pred)) ** 2)
+        return (torch.log1p(y_true) - torch.log1p(y_pred)) ** 2
 
-# %% ../nbs/losses.ipynb 7
+# %% ../nbs/losses.ipynb 8
 class wHubberLoss(Loss):
     def __init__(self, ranges, weights, solact_levels, delta=2.0):
         super().__init__(ranges, weights, solact_levels)
+        self.delta = delta
     
     def loss_measure(self, y_pred, y_true):
         error = y_true - y_pred
         
         is_small_error = error < self.delta
         small_error_loss = (0.5 * (error ** 2))
-        large_error_loss = (delta * (torch.abs(error) - 0.5 * delta))
+        large_error_loss = (self.delta * (torch.abs(error) - 0.5 * self.delta))
 
         return torch.where(is_small_error, small_error_loss, large_error_loss)
 
-# %% ../nbs/losses.ipynb 8
+# %% ../nbs/losses.ipynb 9
 class ClassificationLoss(Loss):
     def __init__(self, ranges, solact_levels, loss):
         n_variables = ranges.shape[1]
-        weights = np.arrange(n_variables)
+        weights = np.arange(n_variables)
 
         super().__init__(ranges, weights, solact_levels)
 
         self.loss_measure = loss.loss_measure
 
     def forward(self, y_pred, y_true):
-        error = self.loss_measure(y_pred, y_true)
-        weights = 1 + np.abs(self.weighted_loss_tensor(y_true) - self.weighted_loss_tensor(y_preds))
+        error = self.loss_measure(self, y_pred, y_true)
+        weights = 1 + torch.abs(self.weighted_loss_tensor(y_true) - self.weighted_loss_tensor(y_pred))
         loss = (error * weights).mean()
         
         return loss
 
-# %% ../nbs/losses.ipynb 10
+# %% ../nbs/losses.ipynb 12
 class LossMetrics:
     def __init__(self, loss_func:Loss):
         self.loss_func = loss_func
