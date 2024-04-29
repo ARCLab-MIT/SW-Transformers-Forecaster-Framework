@@ -120,13 +120,14 @@ class TrendedLoss(nn.Module):
         input_trend = TrendedLoss._calculate_trends(y_pred)
         target_trend = TrendedLoss._calculate_trends(y_true)
         
-        trend_diff = torch.abs(torch.Tensor(input_trend) - torch.Tensor(target_trend)).to(device)
+        trend_diff = torch.abs(torch.Tensor(input_trend) - torch.Tensor(target_trend))
 
-        pct_var = ((y_pred-y_true)**2).to(device)
-        out = (pct_var * trend_diff.reshape(batch,variables,1)).to(device)
-        loss = out.mean()
+        error = self.loss_measure(self, y_pred, y_true)
+        weights = trend_diff.reshape(batch,variables,1)
+        loss = (error * weights).mean()
 
-        return loss.cpu()
+
+        return loss
 
 # %% ../nbs/losses.ipynb 12
 class LossMetrics:
