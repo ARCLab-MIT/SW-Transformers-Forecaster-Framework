@@ -102,26 +102,28 @@ class TrendedLoss(nn.Module):
         super().__init__()
         self.loss_measure = loss.loss_measure
 
-    def _slope(self, y):
+    @staticmethod
+    def _slope(y):
         x = np.arange(len(y))
         slope, _ = np.polyfit(x, y, deg=1)
         return slope
 
+    @staticmethod
+    def _calculate_trends(tensor):
+        np_tensor = tensor.cpu().detach().numpy()
+        trends = np.apply_along_axis(TrendedLoss._slope, 2, np_tensor)
+        return torch.Tensor(trends)
+
     def forward(self, y_pred, y_true):
-        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-        reshaped_input = y_pred.reshape(1,4,-1)
-        reshaped_target = y_true.reshape(1,4,-1)
+        batch, variables, _ = y_pred.shape
 
-        input_trend, target_trend = [], []
-
-        for i in range(y_pred.shape[1]):
-            input_trend.append(self._slope(reshaped_input[0,i,:].cpu().detach().numpy()))
-            target_trend.append(self._slope(reshaped_target[0,i,:].cpu().detach().numpy()))
-
+        input_trend = TrendedLoss._calculate_trends(y_pred)
+        target_trend = TrendedLoss._calculate_trends(y_true)
+        
         trend_diff = torch.abs(torch.Tensor(input_trend) - torch.Tensor(target_trend)).to(device)
 
-        pct_var = self.loss_measure(self, y_pred, y_true)
-        out = (pct_var * trend_diff.reshape(1,4,1)).to(device)
+        pct_var = ((y_pred-y_true)**2).to(device)
+        out = (pct_var * trend_diff.reshape(batch,variables,1)).to(device)
         loss = out.mean()
 
         return loss.cpu()
