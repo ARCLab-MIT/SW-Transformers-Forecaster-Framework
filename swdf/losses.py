@@ -146,6 +146,7 @@ class ClassificationLoss(WeightedLoss):
     def forward(self, input, target):
         error = self.loss_measure(input, target)
         weights = 1 + torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
+        weights = weights.mean(dim=1)
         loss = (error * weights).mean()
         
         return loss
