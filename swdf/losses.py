@@ -146,7 +146,10 @@ class ClassificationLoss(WeightedLoss):
     def forward(self, input, target):
         error = self.loss_measure(input, target)
         weights = 1 + torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
-        weights = weights.mean(dim=1)
+        
+        if (error.shape != weights.shape):
+            weights = weights.mean(dim=1)
+        
         loss = (error * weights).mean()
         
         return loss
@@ -219,25 +222,39 @@ class LossMetrics:
     
 
     # Metrics generation
-    def _generate_loss_functions(self, loss_func, offset=0):
-        metrics = []
-        for i, level in enumerate(self.solact_levels):
-            def loss_fn(self, input, target, i=i):
-                return loss_func(input, target, i+offset)
+    def loss_low(self, input, target):
+        return self._apply_weighted_loss_by_level(input, target, 0)
+    
+    def loss_moderate(self, input, target):
+        return self._apply_weighted_loss_by_level(input, target, 1)
+    
+    def loss_elevated(self, input, target):
+        return self._apply_weighted_loss_by_level(input, target, 2)
+    
+    def loss_high(self, input, target):
+        return self._apply_weighted_loss_by_level(input, target, 3)
+    
+    def missclassifications_low(self, predictions, targets):
+        return self._count_misclassifications_by_level(predictions, targets, 1)
+    
+    def missclassifications_moderate(self, predictions, targets):
+        return self._count_misclassifications_by_level(predictions, targets, 2)
+    
+    def missclassifications_elevated(self, predictions, targets):
+        return self._count_misclassifications_by_level(predictions, targets, 3)
+    
+    def missclassifications_high(self, predictions, targets):
+        return self._count_misclassifications_by_level(predictions, targets, 4)
+    
 
-            method_name = f"loss_{level}"
-            loss_fn.__name__ = method_name
-            setattr(self, method_name, types.MethodType(loss_fn, self))
-            metrics.append(getattr(self, method_name))
-        return metrics
-
+    # Metrics retrieval
     def get_metrics(self):
         if isinstance(self.loss_func, ClassificationLoss):
-            return self._generate_loss_functions(self._count_misclassifications_by_level, offset=1)
+            return [self.missclassifications_low, self.missclassifications_moderate, self.missclassifications_elevated, self.missclassifications_high]
         
-        elif isinstance(self.loss_func, (TrendedLoss, Loss)):
-            return []
+        elif isinstance(self.loss_func, (WeightedLoss)):
+            return [self.loss_low, self.loss_moderate, self.loss_elevated, self.loss_high]
         
         else:
-            return self._generate_loss_functions(self._apply_weighted_loss_by_level)
+            return []
 
