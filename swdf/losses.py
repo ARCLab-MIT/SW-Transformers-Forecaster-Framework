@@ -134,7 +134,7 @@ class wHubberLoss(WeightedLoss):
 class ClassificationLoss(WeightedLoss):
     def __init__(self, ranges, loss):
         n_variables = ranges.shape[1]
-        weights = np.arange(1, n_variables+1)
+        weights = np.arange(n_variables)
 
         super().__init__(ranges, weights)
 
@@ -184,11 +184,12 @@ class TrendedLoss(nn.Module):
 
 # %% ../nbs/losses.ipynb 16
 class LossMetrics:
-    def __init__(self, loss_func:WeightedLoss):
+    def __init__(self, loss_func:WeightedLoss, solact_levels:list):
         self.loss_func = loss_func
+        self.solact_levels = solact_levels
 
     # Weighted Regressive Loss Metrics
-    def loss_call(self, input, target, weight_idx):
+    def _apply_weighted_loss_by_level(self, input, target, weight_idx):
         loss_copy = deepcopy(self.loss_func)
 
         for idx in range(len(loss_copy.weights)):
@@ -196,58 +197,46 @@ class LossMetrics:
                 loss_copy.weights[idx] = 0
         
         return loss_copy(input, target)
-
-    def loss_low(self, input, target):
-        return self.loss_call(input, target, 0)
-
-    def loss_moderate(self, input, target):
-        return self.loss_call(input, target, 1)
-
-    def loss_elevated(self, input, target):
-        return self.loss_call(input, target, 2)
-
-    def loss_high(self, input, target):
-        return self.loss_call(input, target, 3)
     
-
+    
     # Classification Loss Metrics
-    def _calculate_misclassifications(self, predictions, targets):
+    def _compute_misclassifications(self, predictions, targets):
         classifier = self.loss_func.weighted_loss_tensor
         true_labels = classifier(targets)
         predicted_labels = classifier(predictions)
 
-        misclassification_mask = (true_labels != predicted_labels).int()
-        misclassified_labels = misclassification_mask * predicted_labels
+        misclassified_labels = (true_labels != predicted_labels).int() * predicted_labels
 
         return misclassified_labels.unique(return_counts=True)
 
     def _count_misclassifications_by_level(self, predictions, targets, level):
-        unique_labels, label_counts = self._calculate_misclassifications(predictions, targets)
-        
-        if level in unique_labels:
-            level_index = (unique_labels == level).nonzero(as_tuple=True)[0].item()
-            return label_counts[level_index].item()
-        return 0
+        unique_labels, label_counts = self._compute_misclassifications(predictions, targets)
+        label_count_dict = dict(zip(unique_labels.tolist(), label_counts.tolist()))
 
-    def avg_count_low(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 1)
-
-    def avg_count_moderate(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 2)
-
-    def avg_count_elevated(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 3)
-
-    def avg_count_high(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 4)
+        return label_count_dict.get(level, 0)
+    
     
 
-    # Metrics retrieval
-    def metrics(self):
-        if isinstance(self.loss_func, TrendedLoss):
+    # Metrics generation
+    def _generate_loss_functions(self, loss_func, offset=0):
+        metrics = []
+        for i, level in enumerate(self.solact_levels):
+            def loss_fn(self, input, target, i=i):
+                return loss_func(input, target, i+offset)
+
+            method_name = f"loss_{level}"
+            loss_fn.__name__ = method_name
+            setattr(self, method_name, types.MethodType(loss_fn, self))
+            metrics.append(getattr(self, method_name))
+        return metrics
+
+    def get_metrics(self):
+        if isinstance(self.loss_func, ClassificationLoss):
+            return self._generate_loss_functions(self._count_misclassifications_by_level, offset=1)
+        
+        elif isinstance(self.loss_func, (TrendedLoss, Loss)):
             return []
         
-        if isinstance(self.loss_func, ClassificationLoss):
-            return [self.count_low, self.count_moderate, self.count_elevated, self.count_high]
+        else:
+            return self._generate_loss_functions(self._apply_weighted_loss_by_level)
 
-        return [self.loss_low, self.loss_moderate, self.loss_elevated, self.loss_high]
