@@ -146,8 +146,8 @@ class ClassificationLoss(WeightedLoss):
     def forward(self, input, target):
         error = self.loss_measure(input, target)
         weights = 1 + torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
-        
-        if (error.shape != weights.shape):
+
+        if (error.shape != weights.shape): # To avoid the use of other loss functions as CrossEntropyLoss
             weights = weights.mean(dim=1)
         
         loss = (error * weights).mean()
@@ -219,9 +219,8 @@ class LossMetrics:
 
         return label_count_dict.get(level, 0)
     
-    
 
-    # Metrics generation
+    # Metrics functions
     def loss_low(self, input, target):
         return self._apply_weighted_loss_by_level(input, target, 0)
     
