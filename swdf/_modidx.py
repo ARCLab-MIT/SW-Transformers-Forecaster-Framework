@@ -100,4 +100,5 @@ d = { 'settings': { 'branch': 'main',
                             'swdf.utils.plot_forecast_2': ('utils.html#plot_forecast_2', 'swdf/utils.py'),
                             'swdf.utils.plot_solar_algorithm_performance': ('utils.html#plot_solar_algorithm_performance', 'swdf/utils.py'),
                             'swdf.utils.plot_solar_algorithm_performance_comparison': ( 'utils.html#plot_solar_algorithm_performance_comparison',
-                                                                                        'swdf/utils.py')}}}
+                                                                                        'swdf/utils.py'),
+                            'swdf.utils.sliding_window_generator': ('utils.html#sliding_window_generator', 'swdf/utils.py')}}}

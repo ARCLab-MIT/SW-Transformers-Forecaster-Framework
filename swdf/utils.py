@@ -4,7 +4,7 @@
 __all__ = ['config', 'plot_forecast_2', 'plot_solar_algorithm_performance', 'plot_solar_algorithm_performance_comparison',
            'bold_best', 'convert_uuids_to_indices', 'create_latex_comparison_tables', 'get_classified_columns',
            'clean_f10_values', 'get_F10_historical_distribution', 'euclidean_distance_dict',
-           'find_closest_distribution']
+           'find_closest_distribution', 'sliding_window_generator']
 
 # %% ../nbs/utils.ipynb 2
 import numpy as np
@@ -13,10 +13,12 @@ from fastcore.all import *
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+from tsai.basics import SlidingWindow
 from tsai.utils import yaml2dict
 from tsai.data.external import download_data
 from collections import Counter
 from itertools import combinations, chain
+import more_itertools as mit
 from tqdm import tqdm
 
 config = yaml2dict('../dev_nbs/config/solfsmy.yaml', attrdict=True)
@@ -461,3 +463,33 @@ def find_closest_distribution(df_cat, target_distribution, segment_size, val_siz
             distribution_found = distribution
     print("The closest group of segments to F10.7 categories has an euclidean distance of", best_distance)
     return best_combination, segments, distribution_found
+
+# %% ../nbs/utils.ipynb 21
+def sliding_window_generator(df, split_start, data_columns, config, comb=None, segments=None):
+    consecutive_elements, X, y = None, None, None
+
+    if comb is not None:
+        consecutive_elements = [list(group) for group in mit.consecutive_groups(comb)]
+
+        df_to_window = []
+        for elements in consecutive_elements:
+            best_comb_idxs = [segments[i] for i in elements]
+            df_to_window.append(df.iloc[chain.from_iterable(best_comb_idxs)])
+    else:
+        df_to_window = [df]
+
+    X_window, y_window = None, None 
+    for df_window in df_to_window:    
+        X_window, y_window = SlidingWindow(
+            window_len=config.lookback,
+            horizon=config.horizon, 
+            stride=1, 
+            get_x=data_columns, 
+            get_y=data_columns
+        )(df_window)
+        X = np.concatenate([X, X_window]) if X is not None else X_window
+        y = np.concatenate([y, y_window]) if y is not None else y_window
+    
+    
+    splits = L(list(np.arange(split_start, len(X)+split_start)))
+    return X, y, splits
