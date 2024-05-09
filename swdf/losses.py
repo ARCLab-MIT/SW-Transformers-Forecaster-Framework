@@ -51,7 +51,7 @@ class MSLELoss(Loss):
         super().__init__(reduction)
 
     def _compute_loss(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        return (torch.log1p(target) - torch.log1p(input))**2
+        return (torch.log1p(input) - torch.log1p(target))**2
     
 class HubberLoss(Loss):
     def __init__(self, reduction:str=None, delta:float=1.):
