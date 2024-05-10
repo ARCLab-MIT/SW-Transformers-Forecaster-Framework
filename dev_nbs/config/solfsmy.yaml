@@ -8,7 +8,7 @@ train:
     - S10
     - M10
     - Y10
-  data_url: 'https://sol.spacenvironment.net/jb2008/indices/SOLFSMY.TXT'
+  data_url: 'https://sol.spacenvironment.net/JB2008/indices/SOLFSMY.TXT'
   data_path: '../data/SOLFSMY.TXT'
   bs: 32
 
