@@ -188,7 +188,7 @@ class TrendedLoss(nn.Module):
 
 # %% ../nbs/losses.ipynb 16
 class LossMetrics:
-    def __init__(self, loss_func:WeightedLoss, solact_levels:list):
+    def __init__(self, loss_func, solact_levels:list):
         self.loss_func = loss_func
         self.solact_levels = solact_levels
 
@@ -251,7 +251,7 @@ class LossMetrics:
         if isinstance(self.loss_func, ClassificationLoss):
             return [self.missclassifications_low, self.missclassifications_moderate, self.missclassifications_elevated, self.missclassifications_high]
         
-        elif isinstance(self.loss_func, (WeightedLoss)):
+        elif isinstance(self.loss_func, WeightedLoss):
             return [self.loss_low, self.loss_moderate, self.loss_elevated, self.loss_high]
         
         else:
