@@ -4,11 +4,12 @@
 __all__ = ['config', 'plot_forecast_2', 'plot_solar_algorithm_performance', 'plot_solar_algorithm_performance_comparison',
            'bold_best', 'convert_uuids_to_indices', 'create_latex_comparison_tables', 'get_classified_columns',
            'clean_f10_values', 'get_F10_historical_distribution', 'euclidean_distance_dict',
-           'find_closest_distribution', 'sliding_window_generator']
+           'find_closest_distribution', 'sliding_window_generator', 'download_dst_data']
 
 # %% ../nbs/utils.ipynb 2
 import numpy as np
 import pandas as pd
+import os
 from fastcore.all import *
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -20,6 +21,8 @@ from collections import Counter
 from itertools import combinations, chain
 import more_itertools as mit
 from tqdm import tqdm
+import requests
+
 
 config = yaml2dict('../dev_nbs/config/solfsmy.yaml', attrdict=True)
 
@@ -493,3 +496,89 @@ def sliding_window_generator(df, split_start, data_columns, config, comb=None, s
     
     splits = L(list(np.arange(split_start, len(X)+split_start)))
     return X, y, splits
+
+# %% ../nbs/utils.ipynb 23
+def download_dst_data(start_date: str = '01/1957',
+                      end_date: str = pd.Timestamp.today(),
+                      save_folder: str = "./dst_data"):
+    """
+    Downloads Dst index data between the specified start and end dates.
+
+    :param start_date: Start date in the format 'MM/YYYY'
+    :param end_date: End date in the format 'MM/YYYY'
+    :param save_folder: Folder where the data files should be saved
+    """
+
+    os.makedirs(save_folder, exist_ok=True)
+
+    # Initialize file path
+    file_name = "DST_IAGA2002.txt"
+    file_path = os.path.join(save_folder, file_name)
+
+
+    # Remove existing file if it exists
+    if os.path.exists(file_path):
+        os.remove(file_path)
+        print(f"Deleted existing file: {file_path}")
+
+    # Convert input dates to datetime objects
+    start_dt = pd.to_datetime(start_date, format='%m/%Y')
+    end_dt = pd.to_datetime(end_date, format='%m/%Y')
+
+    # HTTP REQUEST COMPONENTS
+    current_start = start_dt
+    while current_start <= end_dt:
+        current_end = min(current_start + pd.DateOffset(years=24), end_dt)
+
+        # Extract year components
+        SCent = current_start.year // 100
+        STens = (current_start.year % 100) // 10
+        SYear = current_start.year % 10
+        SMonth = current_start.month
+
+        ECent = current_end.year // 100
+        ETens = (current_end.year % 100) // 10
+        EYear = current_end.year % 10
+        EMonth = current_end.month
+
+        # Construct URL for current chunk
+        url = f"https://wdc.kugi.kyoto-u.ac.jp/cgi-bin/dstae-cgi?" \
+              f"SCent={SCent}&" \
+              f"STens={STens}&" \
+              f"SYear={SYear}&" \
+              f"SMonth={SMonth:02d}&" \
+              f"ECent={ECent}&" \
+              f"ETens={ETens}&" \
+              f"EYear={EYear}&" \
+              f"EMonth={EMonth:02d}&" \
+              "Image+Type=GIF&COLOR=COLOR&AE+Sensitivity=0&Dst+Sensitivity=0&Output=DST&Out+format=IAGA2002"
+
+        headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/png,image/svg+xml,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Connection": "keep-alive",
+            "Referer": "https://wdc.kugi.kyoto-u.ac.jp/dstae/index.html"
+        }
+
+        try:
+            session = requests.session()
+            response = session.get(url, headers=headers)
+            response.raise_for_status()  # Raise an error for bad responses
+
+            # Append or write to file
+            mode = 'ab' if os.path.exists(file_path) else 'wb'
+            with open(file_path, mode) as file:
+                file.write(response.content)
+
+            print(f"Downloaded and saved data from {current_start.strftime('%m/%Y')} to {current_end.strftime('%m/%Y')}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to download data: {e}")
+
+        # Move to the next chunk
+        current_start = current_end + pd.DateOffset(days=1)
+
+    print(f"All data downloaded and saved to {file_path}")
+    return file_path
+

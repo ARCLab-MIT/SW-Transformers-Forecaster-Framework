@@ -4,7 +4,7 @@
 train:
   add_time_channels: False # Add time channels to the data (year, day of year)
   dst:
-    data_url: null
+    download: False
     #data_url: 'https://sol.spacenvironment.net/jb2008/indices/DSTFILE.TXT'
     data_path: '../data/DST_IAGA2002.txt'
   horizon: 144 # default: 6 days * 24 values per day (144)

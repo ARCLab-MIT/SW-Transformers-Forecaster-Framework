@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from tsai.basics import *
 
-# %% ../nbs/losses.ipynb 3
+# %% ../nbs/losses.ipynb 2
 class Loss(nn.Module, ABC):
     def __init__(self, reduction:str=None):
         super().__init__()
@@ -30,7 +30,7 @@ class Loss(nn.Module, ABC):
         loss = self._compute_loss(input, target)
         return self._reduce(loss)
 
-# %% ../nbs/losses.ipynb 4
+# %% ../nbs/losses.ipynb 3
 class MSELoss(Loss):
     def __init__(self, reduction:str=None):
         super().__init__(reduction)
@@ -39,9 +39,8 @@ class MSELoss(Loss):
         return (target-input)**2
 
 class MAELoss(Loss):
-    def __init__(self, reduce:str=None):
-        super().__init__()
-        self.reduce = reduce
+    def __init__(self, reduction:str=None):
+        super().__init__(reduction)
 
     def _compute_loss(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         return torch.abs(target-input)
@@ -67,7 +66,7 @@ class HubberLoss(Loss):
 
         return torch.where(is_small_error, small_error_loss, large_error_loss)
 
-# %% ../nbs/losses.ipynb 6
+# %% ../nbs/losses.ipynb 5
 class WeightedLoss(nn.Module, ABC):
     def __init__(self, ranges:ndarray, weights:ndarray):
         super().__init__()
@@ -96,7 +95,7 @@ class WeightedLoss(nn.Module, ABC):
         
         return loss
 
-# %% ../nbs/losses.ipynb 8
+# %% ../nbs/losses.ipynb 7
 class wMSELoss(WeightedLoss):
     def __init__(self, ranges, weights):
         super().__init__(ranges, weights)
@@ -105,7 +104,7 @@ class wMSELoss(WeightedLoss):
     def loss_measure(self, input, target):
         return MSELoss()(input, target)
 
-# %% ../nbs/losses.ipynb 9
+# %% ../nbs/losses.ipynb 8
 class wMAELoss(WeightedLoss):
     def __init__(self, ranges, weights):
         super().__init__(ranges, weights)
@@ -113,7 +112,7 @@ class wMAELoss(WeightedLoss):
     def loss_measure(self, input, target):
         return MAELoss()(input, target)
 
-# %% ../nbs/losses.ipynb 10
+# %% ../nbs/losses.ipynb 9
 class wMSLELoss(WeightedLoss):
     def __init__(self, ranges, weights):
         super().__init__(ranges, weights)
@@ -121,7 +120,7 @@ class wMSLELoss(WeightedLoss):
     def loss_measure(self, input, target):
         return MSLELoss()(input, target)
 
-# %% ../nbs/losses.ipynb 11
+# %% ../nbs/losses.ipynb 10
 class wHubberLoss(WeightedLoss):
     def __init__(self, ranges, weights, delta=2.0):
         super().__init__(ranges, weights)
@@ -130,7 +129,7 @@ class wHubberLoss(WeightedLoss):
     def loss_measure(self, y_pred, y_true):
         return HubberLoss(self.delta)(y_pred, y_true)
 
-# %% ../nbs/losses.ipynb 12
+# %% ../nbs/losses.ipynb 11
 class ClassificationLoss(WeightedLoss):
     def __init__(self, ranges, loss):
         n_variables = ranges.shape[1]
@@ -154,7 +153,7 @@ class ClassificationLoss(WeightedLoss):
         
         return loss
 
-# %% ../nbs/losses.ipynb 13
+# %% ../nbs/losses.ipynb 12
 class TrendedLoss(nn.Module):
     def __init__(self, loss: Loss):
         super().__init__()
@@ -186,7 +185,7 @@ class TrendedLoss(nn.Module):
 
         return loss
 
-# %% ../nbs/losses.ipynb 16
+# %% ../nbs/losses.ipynb 15
 class LossMetrics:
     def __init__(self, loss_func, solact_levels:list):
         self.loss_func = loss_func

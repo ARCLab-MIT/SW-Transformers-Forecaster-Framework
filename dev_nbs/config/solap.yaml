@@ -4,7 +4,7 @@
 train:
   add_time_channels: False # Add time channels to the data (year, day of year)
   solap:
-    data_url: null
+    data_url: 'https://www-app3.gfz-potsdam.de/kp_index/Kp_ap_since_1932.txt'
     data_path: '../data/SOLAP.TXT'
   horizon: 48 # default: 6 days * 8 values per day
   lookback: 144 #  default = 3*horizon
