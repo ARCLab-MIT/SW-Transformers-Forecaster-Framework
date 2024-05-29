@@ -24,7 +24,7 @@ from tqdm import tqdm
 import requests
 
 
-config = yaml2dict('../dev_nbs/config/solfsmy.yaml', attrdict=True)
+config = yaml2dict('/workspaces/sw-driver-forecaster/dev_nbs/config/solfsmy.yaml', attrdict=True)
 
 # %% ../nbs/utils.ipynb 3
 def plot_forecast_2(X_true, y_true, y_pred, dtms=None, sel_vars=None, idx=None, figsize=(8, 4), n_samples=1):
