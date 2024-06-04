@@ -24,7 +24,7 @@ from tqdm import tqdm
 import requests
 
 
-config = yaml2dict('/workspaces/sw-driver-forecaster/dev_nbs/config/solfsmy.yaml', attrdict=True)
+config = yaml2dict('../dev_nbs/config/solfsmy.yaml', attrdict=True)
 
 # %% ../nbs/utils.ipynb 3
 def plot_forecast_2(X_true, y_true, y_pred, dtms=None, sel_vars=None, idx=None, figsize=(8, 4), n_samples=1):
@@ -347,7 +347,7 @@ def create_latex_comparison_tables(results_df, forecast_variables, forecast_hori
         print(latex_table)
 
 # %% ../nbs/utils.ipynb 13
-def get_classified_columns (df: pd.DataFrame, thresholds:dict):
+def get_classified_columns (df: pd.DataFrame, thresholds:dict, activity_levels:dict):
     """
     Creates classified columns based on predefined ranges for specified columns in the DataFrame.
 
@@ -359,7 +359,6 @@ def get_classified_columns (df: pd.DataFrame, thresholds:dict):
 
     """
     columns_to_classify = df.columns.intersection(thresholds.keys())
-    solact_levels = ['low', 'moderate', 'elevated', 'high'] 
 
     if columns_to_classify.empty:
         return df
@@ -368,7 +367,7 @@ def get_classified_columns (df: pd.DataFrame, thresholds:dict):
         for column in columns_to_classify:
             # ranges tuples come as strings in the yaml file, so we need to convert them to tuples with eval
             bins = pd.IntervalIndex.from_tuples(thresholds[column])
-            df_cat[f'{column}_Cat'] = np.array(solact_levels)[pd.cut(df[column], bins=bins).cat.codes]
+            df_cat[f'{column}_Cat'] = np.array(activity_levels[column])[pd.cut(df[column], bins=bins).cat.codes]
         return df_cat
 
 # %% ../nbs/utils.ipynb 15
@@ -412,7 +411,7 @@ def get_F10_historical_distribution(thresholds:dict):
   # Fill the missing values with the average of the previous and next value
   df_F10['F10'] = ((df_F10['F10'].fillna(method='ffill')) + df_F10['F10'].fillna(method='bfill'))/2
 
-  df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds)['F10_Cat'])
+  df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds, ['low', 'moderate', 'elevated', 'high'])['F10_Cat'])
   value = df_F107_cat.value_counts(normalize=True).to_dict()
   
   return value
