@@ -68,25 +68,59 @@ class HubberLoss(Loss):
 
 # %% ../nbs/losses.ipynb 5
 class WeightedLoss(nn.Module, ABC):
-    def __init__(self, ranges:ndarray, weights:ndarray):
+    def __init__(self, thresholds:dict, weights:dict):
         super().__init__()
+
+        # Activity levels' weights can be equal across all variables or different,
+        # and this should be taken into account during preprocessing. 
+        self.all_variables_have_same_weights = len(weights.keys()) == 1
+        ranges, weights = self._preprocess_data(thresholds, weights)
+
         self.register_buffer('ranges', torch.Tensor(ranges))
         self.register_buffer('weights', torch.Tensor(weights))
 
     def weighted_loss_tensor(self, target: torch.Tensor) -> torch.Tensor:        
         batch, variables, horizon = target.shape  # Example shape (32, 4, 6)
-        variable, range, interval = self.ranges.shape  # Example shape (4, 4, 2)
+        variable, max_range, interval = self.ranges.shape  # Example shape (4, 4, 2)
 
         target_shaped = torch.reshape(target, (batch, variables, 1, horizon))  # Example shape (32, 4, 6) -> (32, 4, 1, 6)
-        ranges_shaped = torch.reshape(self.ranges, (variable, range, 1, interval))  # Example shape (4, 4, 2) -> (4, 4, 1, 2)
+        ranges_shaped = torch.reshape(self.ranges, (variable, max_range, 1, interval))  # Example shape (4, 4, 2) -> (4, 4, 1, 2)
 
         weights_tensor = ((ranges_shaped[..., 0] <= target_shaped) & (target_shaped <= ranges_shaped[..., 1])).float()
-        
-        return torch.einsum('r,bvrh->bvh', self.weights, weights_tensor)
+             
+        if self.all_variables_have_same_weights:
+            equation = 'r,bvrh->bvh'
+        else:
+            equation = 'vr,bvrh->bvh'
+
+        return torch.einsum(equation, self.weights, weights_tensor)
     
     @abstractmethod
     def loss_measure(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
         return NotImplementedError
+    
+    def _preprocess_data(self, thresholds, weights):
+        # If each variable has its own weights, calculate the maximum size of weights.
+        # Padding shorter weights with NaNs prevents heterogeneous tensor errors.
+        if (self.all_variables_have_same_weights):
+            ranges = np.array(list(thresholds.values())[:])
+            weights = np.array(next(iter(weights.values())))
+        else:
+            def add_padding(x, padding_value, shape):
+                result = np.full(shape, padding_value)
+                for i, r in enumerate(x):
+                    result[i, :len(r)] = r
+                return result
+            
+            max_size = max([len(array) for array in thresholds.values()])
+
+            ranges_raw = thresholds.values()
+            ranges = add_padding(ranges_raw, np.nan, (len(ranges_raw), max_size, 2))
+
+            weights_raw = [weights[key] for key in thresholds.keys()]
+            weights = add_padding(weights_raw, 0.0, (len(weights_raw), max_size))
+
+        return ranges, weights
     
     def forward(self, y_pred, y_true):
         error = self.loss_measure(y_pred, y_true)
@@ -95,45 +129,45 @@ class WeightedLoss(nn.Module, ABC):
         
         return loss
 
-# %% ../nbs/losses.ipynb 7
+# %% ../nbs/losses.ipynb 8
 class wMSELoss(WeightedLoss):
-    def __init__(self, ranges, weights):
-        super().__init__(ranges, weights)
+    def __init__(self, thresholds, weights):
+        super().__init__(thresholds, weights)
 
     
     def loss_measure(self, input, target):
         return MSELoss()(input, target)
 
-# %% ../nbs/losses.ipynb 8
+# %% ../nbs/losses.ipynb 9
 class wMAELoss(WeightedLoss):
-    def __init__(self, ranges, weights):
-        super().__init__(ranges, weights)
+    def __init__(self, thresholds, weights):
+        super().__init__(thresholds, weights)
 
     def loss_measure(self, input, target):
         return MAELoss()(input, target)
 
-# %% ../nbs/losses.ipynb 9
+# %% ../nbs/losses.ipynb 10
 class wMSLELoss(WeightedLoss):
-    def __init__(self, ranges, weights):
-        super().__init__(ranges, weights)
+    def __init__(self, thresholds, weights):
+        super().__init__(thresholds, weights)
     
     def loss_measure(self, input, target):
         return MSLELoss()(input, target)
 
-# %% ../nbs/losses.ipynb 10
+# %% ../nbs/losses.ipynb 11
 class wHubberLoss(WeightedLoss):
-    def __init__(self, ranges, weights, delta=2.0):
-        super().__init__(ranges, weights)
+    def __init__(self, thresholds, weights, delta=2.0):
+        super().__init__(thresholds, weights)
         self.delta = delta
     
     def loss_measure(self, y_pred, y_true):
         return HubberLoss(self.delta)(y_pred, y_true)
 
-# %% ../nbs/losses.ipynb 11
+# %% ../nbs/losses.ipynb 12
 class ClassificationLoss(WeightedLoss):
-    def __init__(self, ranges, loss):
-        n_variables = ranges.shape[1]
-        weights = np.arange(n_variables)
+    def __init__(self, thresholds, loss):
+        n_variables = len(thresholds.keys())
+        weights = {'All': np.arange(n_variables)}
 
         super().__init__(ranges, weights)
 
@@ -153,7 +187,7 @@ class ClassificationLoss(WeightedLoss):
         
         return loss
 
-# %% ../nbs/losses.ipynb 12
+# %% ../nbs/losses.ipynb 13
 class TrendedLoss(nn.Module):
     def __init__(self, loss: Loss):
         super().__init__()
@@ -185,16 +219,16 @@ class TrendedLoss(nn.Module):
 
         return loss
 
-# %% ../nbs/losses.ipynb 15
+# %% ../nbs/losses.ipynb 16
 class LossMetrics:
-    def __init__(self, loss_func, solact_levels:list):
+    def __init__(self, loss_func, solact_levels):
         self.loss_func = loss_func
         self.solact_levels = solact_levels
 
     # Weighted Regressive Loss Metrics
     def _apply_weighted_loss_by_level(self, input, target, weight_idx):
         loss_copy = deepcopy(self.loss_func)
-
+        
         for idx in range(len(loss_copy.weights)):
             if idx != weight_idx:
                 loss_copy.weights[idx] = 0
@@ -247,7 +281,10 @@ class LossMetrics:
 
     # Metrics retrieval
     def get_metrics(self):
-        if isinstance(self.loss_func, ClassificationLoss):
+        if not isinstance(self.solact_levels, list):
+            def Metrics_Not_Available(input, target): return '_' 
+            return [Metrics_Not_Available]
+        elif isinstance(self.loss_func, ClassificationLoss):
             return [self.missclassifications_low, self.missclassifications_moderate, self.missclassifications_elevated, self.missclassifications_high]
         
         elif isinstance(self.loss_func, WeightedLoss):

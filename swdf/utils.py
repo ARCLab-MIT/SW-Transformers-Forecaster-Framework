@@ -411,7 +411,7 @@ def get_F10_historical_distribution(thresholds:dict):
   # Fill the missing values with the average of the previous and next value
   df_F10['F10'] = ((df_F10['F10'].fillna(method='ffill')) + df_F10['F10'].fillna(method='bfill'))/2
 
-  df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds, ['low', 'moderate', 'elevated', 'high'])['F10_Cat'])
+  df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds, activity_levels={'F10': ['low', 'moderate', 'elevated', 'high']})['F10_Cat'])
   value = df_F107_cat.value_counts(normalize=True).to_dict()
   
   return value
