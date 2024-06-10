@@ -122,10 +122,16 @@ class WeightedLoss(nn.Module, ABC):
 
         return ranges, weights
     
-    def forward(self, y_pred, y_true):
+    def forward(self, y_pred, y_true, reduction='mean'):
         error = self.loss_measure(y_pred, y_true)
         weights = self.weighted_loss_tensor(y_true)
-        loss = (error * weights).mean()
+
+        if reduction == 'mean':
+            loss = (error * weights).mean()
+        elif reduction == 'sum':
+            loss = (error * weights).sum()
+        else: 
+            loss = error*weights
         
         return loss
 
@@ -176,14 +182,17 @@ class ClassificationLoss(WeightedLoss):
     def loss_measure(self, input, target):
         return self.loss(input, target)
 
-    def forward(self, input, target):
+    def forward(self, input, target, reduction='mean'):
         error = self.loss_measure(input, target)
         weights = 1 + torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
 
         if (error.shape != weights.shape): # To avoid the use of other loss functions as CrossEntropyLoss
             weights = weights.mean(dim=1)
-        
-        loss = (error * weights).mean()
+            
+        if reduction == 'mean':
+            loss = (error * weights).mean()
+        elif reduction == 'sum':
+            loss = (error * weights).sum()
         
         return loss
 
