@@ -3,8 +3,8 @@
 ####################
 train:
   add_time_channels: False # Add time channels to the data (year, day of year)
-  horizon: 144 # default: 6 days * 24 values per day (144)
-  lookback: 432 #  default = 3*horizon
+  horizon: 48 # default: 6 days * 8 values per day
+  lookback: 144 #  default = 3*horizon
   partial_n: 0.001
 
 ####################
