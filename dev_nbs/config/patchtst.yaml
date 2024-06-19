@@ -1,5 +1,5 @@
 #attn_dropout: 0.4 # dropout applied to the attention weights
-d_model: 512 # dimension of model
+d_model: 1024 # dimension of model
 # d_ff: 4096 # dimension of fully connected network
 # decomposition: True # apply decomposition (Autoformer)
 #dropout: 0.4 # dropout applied to all linear layers in the encoder except q,k&v projections
