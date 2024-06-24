@@ -359,6 +359,9 @@ class LossMetrics:
     def missclassifications_high(self, predictions, targets):
         return self._count_misclassifications_by_level(predictions, targets, 4)
     
+    ## Metrics Not Available
+    def Metrics_Not_Available(self, input, target): return np.nan 
+    
 
     # Metrics retrieval
     def get_metrics(self):
@@ -370,9 +373,6 @@ class LossMetrics:
                 return [self.loss_low, self.loss_moderate, self.loss_elevated, self.loss_high]
             else: # DST-AP metrics required
                 return [self.loss_Low, self.loss_Medium, self.loss_Active, self.loss_G0, self.loss_G1, self.loss_G2, self.loss_G3, self.loss_G4, self.loss_G5]
-            
-        
         else:
-            def Metrics_Not_Available(input, target): return '_' 
-            return [Metrics_Not_Available]
+            return [self.Metrics_Not_Available]
 
