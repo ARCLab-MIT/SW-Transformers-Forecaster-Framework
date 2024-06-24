@@ -1,8 +1,8 @@
-#attn_dropout: 0.4 # dropout applied to the attention weights
+attn_dropout: 0.4 # dropout applied to the attention weights
 d_model: 1024 # dimension of model
 # d_ff: 4096 # dimension of fully connected network
 # decomposition: True # apply decomposition (Autoformer)
-#dropout: 0.4 # dropout applied to all linear layers in the encoder except q,k&v projections
+dropout: 0.2 # dropout applied to all linear layers in the encoder except q,k&v projections
 #individual: True # head: one linear layer per channel (true) or one per all channels (false, default)
 #n_layers: 3 # number of encoder layers
 n_heads: 32 # number of heads
