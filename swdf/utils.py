@@ -4,7 +4,7 @@
 __all__ = ['config', 'plot_forecast_2', 'plot_solar_algorithm_performance', 'plot_solar_algorithm_performance_comparison',
            'bold_best', 'convert_uuids_to_indices', 'create_latex_comparison_tables', 'get_classified_columns',
            'clean_f10_values', 'get_F10_historical_distribution', 'euclidean_distance_dict',
-           'find_closest_distribution', 'sliding_window_generator', 'download_dst_data']
+           'find_closest_distribution', 'sliding_window_generator', 'download_dst_data', 'generate_preprocessed_data']
 
 # %% ../nbs/utils.ipynb 2
 import numpy as np
@@ -15,13 +15,14 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from tsai.basics import SlidingWindow
-from tsai.utils import yaml2dict
+from tsai.utils import yaml2dict, load_object
 from tsai.data.external import download_data
 from collections import Counter
 from itertools import combinations, chain
 import more_itertools as mit
 from tqdm import tqdm
 import requests
+import papermill as pm
 
 
 config = yaml2dict('../dev_nbs/config/solfsmy.yaml', attrdict=True)
@@ -581,3 +582,26 @@ def download_dst_data(start_date: str = '01/1957',
     print(f"All data downloaded and saved to {file_path}")
     return file_path
 
+
+# %% ../nbs/utils.ipynb 26
+def generate_preprocessed_data(config, generate_preproc_pipe=True):
+    df, preproc_pipe = None, None
+    try:
+        df = load_object(config.df_save_path)
+        if generate_preproc_pipe:
+            preproc_pipe = load_object(config.preproc_pipe_save_path)
+
+    except FileNotFoundError:
+        output = './tmp/data_out.ipynb'
+        print(f"{config.df_save_path} not found. Executing the notebook to generate the data...")
+        
+        pm.execute_notebook(config.data_nb, output)
+        os.remove(output)
+
+        df = load_object(config.df_save_path)
+        if generate_preproc_pipe:
+            preproc_pipe = load_object(config.preproc_pipe_save_path)
+
+        print("Data generated successfully.")
+    
+    return df, preproc_pipe

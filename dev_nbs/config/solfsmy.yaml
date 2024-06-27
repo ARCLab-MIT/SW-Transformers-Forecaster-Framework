@@ -1,15 +1,29 @@
 ####################
-## Train
+## Data
 ####################
-train:
-  add_time_channels: False # Add time channels to the data (year, day of year)
-  data_columns_fcst: # Columns to use for forecasting
+data:
+  data_url: 'https://sol.spacenvironment.net/JB2008/indices/SOLFSMY.TXT'
+  data_path: '../data/SOLFSMY.TXT'
+  force_download: False
+  data_nb: "./solfsmy_data.ipynb"
+  df_save_path: "./preprocessed_data/dataframes/solfsmy.pkl"
+  preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_solfsmy.pkl"
+  data_columns: 
     - F10
     - S10
     - M10
     - Y10
-  data_url: 'https://sol.spacenvironment.net/JB2008/indices/SOLFSMY.TXT'
-  data_path: '../data/SOLFSMY.TXT'
+  data_time_columns:
+    - Year
+    - DDD
+  add_time_channels: False # Add time channels to the data (year, day of year)
+
+  
+
+####################
+## Train
+####################
+train:
   bs: 32
 
 ####################
@@ -26,10 +40,3 @@ eval:
   round_preds: True # Round predictions to the nearest integer
   # Path to the F10.7 data
   solfsmy_data_path: '../data/SOLFSMY.TXT'
-  
-####################
-## F10.7 Historical Values
-####################
-data:
-  dataF107_url: 'https://www.ngdc.noaa.gov/stp/space-weather/solar-data/solar-features/solar-radio/noontime-flux/penticton/penticton_adjusted/listings/listing_drao_noontime-flux-adjusted_daily.txt'
-  dataF107_path: '../data/SOLF107_HistoricalValues.txt' 

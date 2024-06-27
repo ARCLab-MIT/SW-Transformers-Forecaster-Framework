@@ -4,6 +4,9 @@
 data:
   force_download: False
   data_path: '../data/DST_IAGA2002.txt'
+  data_nb: "./geodst_data.ipynb"
+  df_save_path: "./preprocessed_data/dataframes/geodst.pkl"
+  preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_geodst.pkl"
 
 ####################
 ## Train
@@ -13,11 +16,7 @@ train:
   horizon: 144 # default: 6 days * 24 values per day (144)
   lookback: 432 #  default = 3*horizon
   partial_n: 0.001
-  data:
-    nb: "./geodst_data.ipynb"
-    df_save_path: "./preprocessed_data/dataframes/geodst.pkl"
-    preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_geodst.pkl"
-
+  
 ####################
 ## Eval
 ####################

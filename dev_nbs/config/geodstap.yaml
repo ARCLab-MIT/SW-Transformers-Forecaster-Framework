@@ -1,4 +1,17 @@
 ####################
+## Data
+####################
+data:
+  dst_config: "./config/geodst.yaml"
+  ap_config: "./config/geoap.yaml"
+  data_nb: "./geodstap_data.ipynb"
+  df_save_path: "./preprocessed_data/dataframes/geodstap.pkl"
+  preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_geodstap.pkl"
+
+####################
+  
+
+####################
 ## Train
 ####################
 train:

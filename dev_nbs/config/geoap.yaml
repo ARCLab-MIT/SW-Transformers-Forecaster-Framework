@@ -5,6 +5,9 @@ data:
     data_url: 'https://www-app3.gfz-potsdam.de/kp_index/Kp_ap_since_1932.txt'
     data_path: '../data/SOLAP.TXT'
     force_download: False
+    data_nb: "./geoap_data.ipynb"
+    df_save_path: "./preprocessed_data/dataframes/geoap.pkl"
+    preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_geoap.pkl"
 
 ####################
 ## Train
