@@ -1,0 +1,16 @@
+####################
+## Data
+####################
+data:
+  data_nb: './geodstap_tsr_data.ipynb'
+  df_save_path: './preprocessed_data/dataframes/geodstap_tsr.pkl'
+  preproc_pipe_save_path: './preprocessed_data/pipelines/preproc_geodstap_tsr.pkl'
+  tsa_model: 'additive'
+
+####################
+## Train
+####################
+train:
+  trend_arch: 'PatchTST'
+  season_arch: 'PatchTST'
+  residual_arch: 'PatchTST'

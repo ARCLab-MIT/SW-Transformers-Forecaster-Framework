@@ -9,9 +9,6 @@ data:
   preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_geodstap.pkl"
 
 ####################
-  
-
-####################
 ## Train
 ####################
 train:
