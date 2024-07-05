@@ -10,7 +10,7 @@ F10:
   - 190
 - !!python/tuple
   - 191
-  - .inf
+  - 99999
 S10:
 - !!python/tuple
   - 0
@@ -23,7 +23,7 @@ S10:
   - 215
 - !!python/tuple
   - 216
-  - .inf
+  - 99999
 M10:
 - !!python/tuple
   - 0
@@ -36,7 +36,7 @@ M10:
   - 167
 - !!python/tuple
   - 168
-  - .inf
+  - 99999
 Y10:
 - !!python/tuple
   - 0
@@ -49,4 +49,4 @@ Y10:
   - 165
 - !!python/tuple
   - 166
-  - .inf
+  - 99999
