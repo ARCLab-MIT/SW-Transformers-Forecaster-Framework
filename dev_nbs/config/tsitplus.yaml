@@ -4,10 +4,10 @@ n_heads: 8  # 8 attention heads to maintain computational efficiency and effecti
 lsa: True  # Locality-Sensitive Attention improves focus on nearby elements in sequences, beneficial for time series.
 attn_dropout: 0.1  # Dropout in attention layers to prevent overfitting while retaining attention focus. [3]
 dropout: 0.2  # General dropout for robust performance and overfitting prevention. [3]
-mlp_ratio: 4  # Larger MLP ratio increases model capacity for non-linear transformations. [4]
-pre_norm: True  # Pre-normalization stabilizes training, especially important in deeper models.
-use_pe: True  # Positional encoding is critical for maintaining the sequential order in time series data.
-token_size: 16  # Optimal token size for capturing sufficient context without overwhelming the model.
+# mlp_ratio: 4  # Larger MLP ratio increases model capacity for non-linear transformations. [4]
+# pre_norm: True  # Pre-normalization stabilizes training, especially important in deeper models.
+# use_pe: True  # Positional encoding is critical for maintaining the sequential order in time series data.
+# token_size: 16  # Optimal token size for capturing sufficient context without overwhelming the model.
 use_bn: True  # Batch normalization stabilizes training by normalizing inputs, beneficial for time series variance.
 
 #########

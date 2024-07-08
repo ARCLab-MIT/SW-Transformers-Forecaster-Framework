@@ -12,5 +12,5 @@ data:
 ####################
 train:
   trend_arch_name: 'LSTMAttention'
-  seasonal_arch_name: 'LSTMAttention'
+  seasonal_arch_name: 'TSiTPlus'
   residual_arch_name: 'GRUAttention'
