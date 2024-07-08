@@ -1,0 +1,25 @@
+hidden_size: 128  # Standard hidden size for GRU, sufficient to capture complex temporal patterns. [1]
+rnn_layers: 2  # Two GRU layers to enhance the model's capacity to capture hierarchical temporal features. [2]
+rnn_dropout: 0.3  # Moderate dropout rate for regularization within GRU layers, preventing overfitting. [3]
+bidirectional: True  # Use bidirectional GRU to capture dependencies in both forward and backward directions. [4]
+encoder_layers: 3  # Three encoder layers for sufficient depth in the attention mechanism, balancing complexity and performance. [5]
+n_heads: 8  # Reducing the number of attention heads to 8 to balance computational efficiency with model performance. [6]
+d_k: 64  # Key dimensionality; typically set as d_model / n_heads for effective attention calculations. [7]
+d_v: 64  # Value dimensionality; aligned with d_k for consistent attention mechanism performance. [7]
+d_ff: 512  # Increased feed-forward network dimension to provide more capacity for the encoder layers. [8]
+encoder_dropout: 0.1  # Standard dropout for encoder layers to prevent overfitting in the attention mechanism. [9]
+fc_dropout: 0.3  # Dropout in fully connected layers to prevent overfitting after the attention mechanism. [3]
+
+#########
+# References
+#########
+# [1] Cho, K., Van Merriënboer, B., Gulcehre, C., Bahdanau, D., Bougares, F., Schwenk, H., & Bengio, Y. (2014). Learning phrase representations using RNN encoder-decoder for statistical machine translation. arXiv preprint arXiv:1406.1078. doi:10.48550/arXiv.1406.1078
+# [2] Chung, J., Gulcehre, C., Cho, K., & Bengio, Y. (2014). Empirical evaluation of gated recurrent neural networks on sequence modeling. arXiv preprint arXiv:1412.3555. doi:10.48550/arXiv.1412.3555
+# [3] Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(56), 1929-1958. doi:10.5555/2627435.2670313
+# [4] Schuster, M., & Paliwal, K. K. (1997). Bidirectional recurrent neural networks. IEEE Transactions on Signal Processing, 45(11), 2673-2681. doi:10.1109/78.650093
+# [5] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30. doi:10.48550/arXiv.1706.03762
+# [6] Michel, P., Levy, O., & Neubig, G. (2019). Are sixteen heads really better than one? arXiv preprint arXiv:1905.10650. doi:10.48550/arXiv.1905.10650
+# [7] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30. doi:10.48550/arXiv.1706.03762
+# [8] Wang, Z., Yan, W., & Oates, T. (2017). Time series classification from scratch with deep neural networks: A strong baseline. International Joint Conference on Neural Networks (IJCNN), 1578-1585. doi:10.1109/IJCNN.2017.7966039
+# [9] Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(56), 1929-1958. doi:10.5555/2627435.2670313
+# [10] Hendrycks, D., & Gimpel, K. (2016). Gaussian error linear units (GELU). arXiv preprint arXiv:1606.08415. doi:10.48550/arXiv.1606.08415

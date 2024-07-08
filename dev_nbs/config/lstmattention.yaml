@@ -1,0 +1,25 @@
+hidden_size: 128  # Standard hidden size for LSTM, capable of capturing complex temporal patterns. [1]
+rnn_layers: 2  # Two LSTM layers to enhance the model's capacity for capturing hierarchical temporal features. [2]
+rnn_dropout: 0.2  # Applying dropout to LSTM layers to prevent overfitting, which is particularly important in LSTMs. [3]
+bidirectional: True  # Use bidirectional LSTM to capture dependencies in both forward and backward directions. [4]
+encoder_layers: 3  # Three encoder layers provide sufficient depth in the attention mechanism while balancing complexity. [5]
+n_heads: 8  # Reducing the number of attention heads to 8 balances computational efficiency and model performance. [6]
+d_k: 64  # Key dimensionality typically set as d_model / n_heads for effective attention calculations. [7]
+d_v: 64  # Value dimensionality aligned with d_k for consistent performance in the attention mechanism. [7]
+d_ff: 512  # Increased feed-forward network dimension to provide more capacity in the encoder layers. [8]
+encoder_dropout: 0.1  # Standard dropout for encoder layers to prevent overfitting in the attention mechanism. [9]
+fc_dropout: 0.3  # Dropout in fully connected layers to reduce overfitting after the attention mechanism. [10]
+
+#########
+# References
+#########
+# [1] Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. Neural computation, 9(8), 1735-1780. doi:10.1162/neco.1997.9.8.1735
+# [2] Greff, K., Srivastava, R. K., Koutník, J., Steunebrink, B. R., & Schmidhuber, J. (2017). LSTM: A search space odyssey. IEEE transactions on neural networks and learning systems, 28(10), 2222-2232. doi:10.1109/TNNLS.2016.2582924
+# [3] Zaremba, W., Sutskever, I., & Vinyals, O. (2014). Recurrent neural network regularization. arXiv preprint arXiv:1409.2329. doi:10.48550/arXiv.1409.2329
+# [4] Schuster, M., & Paliwal, K. K. (1997). Bidirectional recurrent neural networks. IEEE Transactions on Signal Processing, 45(11), 2673-2681. doi:10.1109/78.650093
+# [5] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30. doi:10.48550/arXiv.1706.03762
+# [6] Michel, P., Levy, O., & Neubig, G. (2019). Are sixteen heads really better than one? arXiv preprint arXiv:1905.10650. doi:10.48550/arXiv.1905.10650
+# [7] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30. doi:10.48550/arXiv.1706.03762
+# [8] Wang, Z., Yan, W., & Oates, T. (2017). Time series classification from scratch with deep neural networks: A strong baseline. International Joint Conference on Neural Networks (IJCNN), 1578-1585. doi:10.1109/IJCNN.2017.7966039
+# [9] Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(56), 1929-1958. doi:10.5555/2627435.2670313
+# [10] Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(56), 1929-1958. doi:10.5555/2627435.2670313

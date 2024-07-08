@@ -11,6 +11,6 @@ data:
 ## Train
 ####################
 train:
-  trend_arch: 'PatchTST'
-  season_arch: 'PatchTST'
-  residual_arch: 'PatchTST'
+  trend_arch_name: 'LSTMAttention'
+  seasonal_arch_name: 'LSTMAttention'
+  residual_arch_name: 'GRUAttention'
