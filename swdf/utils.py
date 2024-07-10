@@ -3,8 +3,8 @@
 # %% auto 0
 __all__ = ['config', 'plot_forecast_2', 'plot_solar_algorithm_performance', 'plot_solar_algorithm_performance_comparison',
            'bold_best', 'convert_uuids_to_indices', 'create_latex_comparison_tables', 'get_classified_columns',
-           'clean_f10_values', 'get_F10_historical_distribution', 'euclidean_distance_dict',
-           'find_closest_distribution', 'sliding_window_generator', 'download_dst_data', 'generate_preprocessed_data']
+           'euclidean_distance_dict', 'find_closest_distribution', 'sliding_window_generator', 'download_dst_data',
+           'generate_preprocessed_data']
 
 # %% ../nbs/utils.ipynb 2
 import numpy as np
@@ -372,57 +372,11 @@ def get_classified_columns (df: pd.DataFrame, thresholds:dict, activity_levels:d
         return df_cat
 
 # %% ../nbs/utils.ipynb 15
-def clean_f10_values(value):
-    try:
-        # Remove any trailing '+' using regex and convert to float
-        cleaned_value = re.sub(r'\+$', '', value)
-        return float(cleaned_value)
-    except ValueError:
-        # If conversion fails, return NaN
-        return np.nan
-
-def get_F10_historical_distribution(thresholds:dict):  
-  """
-  Calculate the distribution of F10.7 values from historical data.
-
-  Returns:
-  dict: A dictionary containing the normalized value counts of F10.7 values and its categories.
-  """
-
-  data = config.data
-
-  # From here we will extract the data of F10.7 to check its distribution
-  fnameF107_historical = data.dataF107_path if data.dataF107_url is None else download_data(data.dataF107_url,
-                                                                              fname=data.dataF107_path)
-
-  # Only two columns in the file: Date and F10.7.
-  df_F10 = pd.read_csv(
-            fnameF107_historical, delim_whitespace=True, comment='#', header=None, 
-            names=['Date', 'F10'], 
-            parse_dates=['Date'], 
-            na_values=[".", "+"], 
-            converters={'F10': clean_f10_values},
-          )  
-  df_F10['F10'] = df_F10['F10'].astype(float)
-
-  # Data preprocessing 
-  # Remove the first rows with missing values
-  df_F10 = df_F10[((df_F10['Date'] >= '1947-02-14') & (df_F10['Date'] < '1997-01-01'))]
-
-  # Fill the missing values with the average of the previous and next value
-  df_F10['F10'] = ((df_F10['F10'].fillna(method='ffill')) + df_F10['F10'].fillna(method='bfill'))/2
-
-  df_F107_cat = pd.Series(get_classified_columns(df_F10, thresholds, activity_levels={'F10': ['low', 'moderate', 'elevated', 'high']})['F10_Cat'])
-  value = df_F107_cat.value_counts(normalize=True).to_dict()
-  
-  return value
-
-# %% ../nbs/utils.ipynb 17
 def euclidean_distance_dict(X:dict, Y:dict):
     return math.sqrt(sum((X.get(d,0) - Y.get(d,0))**2 for d in set(X) | set(Y)))
 
 
-# %% ../nbs/utils.ipynb 19
+# %% ../nbs/utils.ipynb 17
 def find_closest_distribution(df_cat, target_distribution, segment_size, val_size):
     """
     Finds the combination of segments in the categorical data that is closest to the target distribution.
@@ -467,7 +421,7 @@ def find_closest_distribution(df_cat, target_distribution, segment_size, val_siz
     print("The closest group of segments to F10.7 categories has an euclidean distance of", best_distance)
     return best_combination, segments, distribution_found
 
-# %% ../nbs/utils.ipynb 21
+# %% ../nbs/utils.ipynb 19
 def sliding_window_generator(df, split_start, data_columns, config, comb=None, segments=None):
     consecutive_elements, X, y = None, None, None
 
@@ -497,7 +451,7 @@ def sliding_window_generator(df, split_start, data_columns, config, comb=None, s
     splits = L(list(np.arange(split_start, len(X)+split_start)))
     return X, y, splits
 
-# %% ../nbs/utils.ipynb 23
+# %% ../nbs/utils.ipynb 21
 def download_dst_data(start_date: str = '01/1957',
                       end_date: str = pd.Timestamp.today(),
                       save_folder: str = "./dst_data"):
@@ -583,7 +537,7 @@ def download_dst_data(start_date: str = '01/1957',
     return file_path
 
 
-# %% ../nbs/utils.ipynb 26
+# %% ../nbs/utils.ipynb 24
 def generate_preprocessed_data(config, generate_preproc_pipe=True):
     df, preproc_pipe = None, None
     try:
