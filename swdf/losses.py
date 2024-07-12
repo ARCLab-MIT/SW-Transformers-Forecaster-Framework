@@ -2,8 +2,7 @@
 
 # %% auto 0
 __all__ = ['Loss', 'MSELoss', 'MAELoss', 'MSLELoss', 'RMSLELoss', 'HubberLoss', 'QuantileLoss', 'WeightedLoss', 'wMSELoss',
-           'wMAELoss', 'wMSLELoss', 'wRMSLELoss', 'wHubberLoss', 'wQuantileLoss', 'ClassificationLoss', 'TrendedLoss',
-           'LossMetrics']
+           'wMAELoss', 'wMSLELoss', 'wRMSLELoss', 'wHubberLoss', 'wQuantileLoss', 'ClassificationLoss', 'TrendedLoss']
 
 # %% ../nbs/losses.ipynb 0
 from abc import ABC, abstractmethod
@@ -254,30 +253,41 @@ class wQuantileLoss(WeightedLoss):
 
 # %% ../nbs/losses.ipynb 23
 class ClassificationLoss(WeightedLoss):
-    def __init__(self, thresholds, loss):
+    def __init__(self, thresholds, loss, alpha=0.5):
         n_variables = len(thresholds.keys())
         weights = {'All': np.arange(n_variables)}
-
         super().__init__(thresholds, weights)
 
         self.loss = loss
+
+        if alpha < 0 or alpha > 1:
+            raise ValueError('Alpha must be between 0 and 1, as it is the weight of the categorical loss against the other loss.')
+        self.alpha = alpha
     
     def loss_measure(self, input, target):
-        return self.loss(input, target)
+        primary_loss_value = self.loss(input, target, reduction=None)
+
+        categorical_error = torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
+        categorical_loss = categorical_error.mean(dim=2)
+
+        bs, var = categorical_loss.shape
+        categorical_loss_value = categorical_loss.view((bs, var, 1))
+
+        return (1 - self.alpha) * primary_loss_value + self.alpha * categorical_loss_value
+
 
     def forward(self, input, target, reduction='mean'):
         error = self.loss_measure(input, target)
-        weights = 1 + torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
 
-        if (error.shape != weights.shape): # To properly format the weights tensor in case of multi-variable classification
-            weights = weights.mean(dim=1)
+        # if (error.shape != weights.shape): # To properly format the weights tensor in case of multi-variable classification
+          #   weights = weights.mean(dim=1)
             
         if reduction == 'mean':
-            loss = (error * weights).mean()
+            loss = error.mean()
         elif reduction == 'sum':
-            loss = (error * weights).sum()
+            loss = error.sum()
         else:
-            loss = error * weights
+            loss = error
         
         return loss
 
@@ -312,116 +322,3 @@ class TrendedLoss(nn.Module):
         loss = (error * weights).mean()
 
         return loss
-
-# %% ../nbs/losses.ipynb 27
-class LossMetrics:
-    def __init__(self, loss_func, solact_levels):
-        self.loss_func = loss_func
-        self.solact_levels = solact_levels
-
-    # Weighted Regressive Loss Metrics
-    def _apply_weighted_loss_by_level(self, input, target, weight_idx):
-        loss_copy = deepcopy(self.loss_func)
-        
-    
-        for idx1 in range(len(loss_copy.weights)):
-            if is_iter(loss_copy.weights[0]):
-                for idx2 in range(len(loss_copy.weights[idx1])):
-                    if (idx1 != weight_idx[0]) | (idx2 != weight_idx[1]):
-                        loss_copy.weights[idx1][idx2] = 0
-            else:
-                if idx1 != weight_idx[1]:
-                    loss_copy.weights[idx1] = 0
-                
-        return loss_copy(input, target)
-    
-    
-    # Classification Loss Metrics
-    def _compute_misclassifications(self, predictions, targets):
-        classifier = self.loss_func.weighted_loss_tensor
-        true_labels = classifier(targets)
-        predicted_labels = classifier(predictions)
-
-        misclassified_labels = (true_labels != predicted_labels).int() * predicted_labels
-
-        return misclassified_labels.unique(return_counts=True)
-
-    def _count_misclassifications_by_level(self, predictions, targets, level):
-        unique_labels, label_counts = self._compute_misclassifications(predictions, targets)
-        label_count_dict = dict(zip(unique_labels.tolist(), label_counts.tolist()))
-
-        return label_count_dict.get(level, 0)
-    
-
-    # Metrics functions
-    ## FSMY Metrics
-    def loss_low(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,0])
-    
-    def loss_moderate(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,1])
-    
-    def loss_elevated(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,2])
-    
-    def loss_high(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,3])
-    
-    ## DST-AP Metrics
-    def loss_Low(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,0])
-    
-    def loss_Medium(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,1])
-    
-    def loss_Active(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [0,2])
-    
-    def loss_G0(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [1,0])
-    
-    def loss_G1(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [1,1])
-    
-    def loss_G2(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [1,2])
-        
-    def loss_G3(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [1,3])
-    
-    def loss_G4(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [1,4])
-    
-    def loss_G5(self, input, target):
-        return self._apply_weighted_loss_by_level(input, target, [1,5])
-    
-    ## ClassificationLoss metrics
-    def missclassifications_low(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 1)
-    
-    def missclassifications_moderate(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 2)
-    
-    def missclassifications_elevated(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 3)
-    
-    def missclassifications_high(self, predictions, targets):
-        return self._count_misclassifications_by_level(predictions, targets, 4)
-    
-    ## Metrics Not Available
-    def Metrics_Not_Available(self, input, target): return np.nan 
-    
-
-    # Metrics retrieval
-    def get_metrics(self):
-        if isinstance(self.loss_func, ClassificationLoss):
-            return [self.missclassifications_low, self.missclassifications_moderate, self.missclassifications_elevated, self.missclassifications_high]
-        
-        elif isinstance(self.loss_func, WeightedLoss):
-            if isinstance(self.solact_levels, list): # FSMY metrics required
-                return [self.loss_low, self.loss_moderate, self.loss_elevated, self.loss_high]
-            else: # DST-AP metrics required
-                return [self.loss_Low, self.loss_Medium, self.loss_Active, self.loss_G0, self.loss_G1, self.loss_G2, self.loss_G3, self.loss_G4, self.loss_G5]
-        else:
-            return [self.Metrics_Not_Available]
-
