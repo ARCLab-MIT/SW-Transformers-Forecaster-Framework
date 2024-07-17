@@ -268,10 +268,8 @@ class ClassificationLoss(WeightedLoss):
         primary_loss_value = self.loss(input, target, reduction=None)
 
         categorical_error = torch.abs(self.weighted_loss_tensor(target) - self.weighted_loss_tensor(input))
-        categorical_loss = categorical_error.mean(dim=2)
+        categorical_loss_value = torch.mean(categorical_error, dim=2, keepdim=True)
 
-        bs, var = categorical_loss.shape
-        categorical_loss_value = categorical_loss.view((bs, var, 1))
 
         return (1 - self.alpha) * primary_loss_value + self.alpha * categorical_loss_value
 
