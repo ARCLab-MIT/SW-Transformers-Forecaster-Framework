@@ -11,6 +11,7 @@ import torch
 import numpy as np
 import pandas as pd
 from tsai.basics import *
+from IPython.display import HTML, display
 
 # %% ../nbs/losses.ipynb 3
 class Loss(nn.Module, ABC):
@@ -479,8 +480,6 @@ class LossFactory:
 
     @classmethod
     def list(cls):
-        from IPython.display import HTML, display
-
         table_rows = []
         
         # Generate rows for the table
@@ -508,10 +507,13 @@ class LossFactory:
 
 
     def create(self, loss_name:str='MSE', **kwargs) -> nn.Module: 
-        if loss_name in LossFactory.losses:
-            if loss_name.__contains__('w'):
+        searched_loss = loss_name.lower()
+        available_losses = [k.lower() for k in LossFactory.losses.keys()]
 
-                if loss_name == 'hubber':
+        if searched_loss in available_losses:
+            if searched_loss.__contains__('w'):
+
+                if searched_loss == 'hubber':
                     delta = kwargs.get('delta', 2.0)
                     return wHubberLoss(
                             thresholds=self.thresholds, 
@@ -519,7 +521,7 @@ class LossFactory:
                             delta=delta
                         )
                 
-                elif loss_name == 'quantile':
+                elif searched_loss == 'quantile':
                     quantile = kwargs.get('quantile', 0.5)
                     return wQuantileLoss(
                             thresholds=self.thresholds, 
@@ -533,7 +535,7 @@ class LossFactory:
                                 weights=self.weights
                             )
                 
-            elif loss_name == 'classification':
+            elif searched_loss == 'classification':
                 alpha = kwargs.get('alpha', 0.5)
                 primary_loss = kwargs.get('primary_loss', MSELoss())
                 return ClassificationLoss(
@@ -542,12 +544,12 @@ class LossFactory:
                             alpha=alpha
                         )
             
-            elif loss_name == 'trended':
+            elif searched_loss == 'trended':
                 primary_loss = kwargs.get('primary_loss', MSELoss())
                 return TrendedLoss(primary_loss=primary_loss)
             
             else:
                 return LossFactory.losses[loss_name]()
         else:
-            raise ValueError(f'Loss {loss_name} not found. Available losses are: {list(cls.losses.keys())}')
+            raise ValueError(f'Loss {loss_name} not found. Run LossFactory.list() to see available losses.')
     
