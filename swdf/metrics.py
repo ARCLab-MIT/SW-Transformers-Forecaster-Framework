@@ -9,7 +9,7 @@ __all__ = ['Metrics', 'RegressiveMetrics', 'SOLFMYMetrics', 'GEODSTAPMetrics', '
 # %% ../nbs/metrics.ipynb 0
 import sys
 sys.path.append('..')
-from abc import ABC
+from abc import ABC, abstractmethod
 import torch
 import numpy as np
 import pandas as pd

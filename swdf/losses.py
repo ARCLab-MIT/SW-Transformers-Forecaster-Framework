@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['Loss', 'MSELoss', 'MAELoss', 'MSLELoss', 'RMSLELoss', 'HubberLoss', 'QuantileLoss', 'WeightedLoss', 'wMSELoss',
-           'wMAELoss', 'wMSLELoss', 'wRMSLELoss', 'wHubberLoss', 'wQuantileLoss', 'ClassificationLoss', 'TrendedLoss']
+           'wMAELoss', 'wMSLELoss', 'wRMSLELoss', 'wHubberLoss', 'wQuantileLoss', 'ClassificationLoss', 'TrendedLoss',
+           'LossFactory']
 
 # %% ../nbs/losses.ipynb 0
 from abc import ABC, abstractmethod
@@ -13,6 +14,13 @@ from tsai.basics import *
 
 # %% ../nbs/losses.ipynb 3
 class Loss(nn.Module, ABC):
+    """
+    <p>Base class for loss functions, providing a common interface for different types of losses.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+    </ul>
+    """
     def __init__(self, reduction:str=None):
         super().__init__()
         self.reduction = reduction
@@ -34,6 +42,14 @@ class Loss(nn.Module, ABC):
 
 # %% ../nbs/losses.ipynb 6
 class MSELoss(Loss):
+    """
+    <p>Mean Squared Error Loss (MSELoss) measures the average squared difference between predicted and actual values.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+    </ul>
+    """
+
     def __init__(self, reduction:str=None):
         super().__init__(reduction)
 
@@ -42,6 +58,13 @@ class MSELoss(Loss):
 
 # %% ../nbs/losses.ipynb 8
 class MAELoss(Loss):
+    """
+    <p>Mean Absolute Error Loss (MAELoss) calculates the average absolute differences between predicted and actual values.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+    </ul>
+    """
     def __init__(self, reduction:str=None):
         super().__init__(reduction)
 
@@ -51,6 +74,13 @@ class MAELoss(Loss):
 
 # %% ../nbs/losses.ipynb 10
 class MSLELoss(Loss):
+    """
+    <p>Mean Squared Logarithmic Error Loss (MSLELoss) penalizes underestimations more than overestimations by using logarithms.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+    </ul>
+    """
     def __init__(self, reduction:str=None):
         super().__init__(reduction)
 
@@ -88,6 +118,14 @@ class MSLELoss(Loss):
 
 # %% ../nbs/losses.ipynb 12
 class RMSLELoss(nn.Module):
+    """
+    <p>Root Mean Squared Logarithmic Error Loss (RMSLELoss) is the square root of MSLE, useful for reducing the impact of outliers.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+    </ul>
+    """
+
     def __init__(self, reduction:str='mean'):
         super().__init__()
         self.msle_loss = MSLELoss(reduction=reduction)
@@ -97,6 +135,14 @@ class RMSLELoss(nn.Module):
 
 # %% ../nbs/losses.ipynb 14
 class HubberLoss(Loss):
+    """
+    <p>Huber Loss (HL) combines the characteristics of both MSE and MAE, aiming to benefit from their respective strengths while mitigating their limitations.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: 'mean'.</li>
+        <li>delta (float): Threshold from where the loss changes from MAE to MSE-like functioning.</li>
+    </ul>
+    """
     def __init__(self, reduction:str=None, delta:float=1.):
         super().__init__(reduction)
         self.delta = delta
@@ -112,6 +158,14 @@ class HubberLoss(Loss):
 
 # %% ../nbs/losses.ipynb 16
 class QuantileLoss(Loss):
+    """
+    <p>Quantile Loss is used for regression tasks where we want to predict a specific quantile.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>quantile (float): The quantile to be predicted, usually a value between 0 and 1.</li>
+    </ul>
+    """
     def __init__(self, quantile: float, reduction: str = None):
         super().__init__(reduction)
         self.quantile = quantile
@@ -122,6 +176,15 @@ class QuantileLoss(Loss):
 
 # %% ../nbs/losses.ipynb 18
 class WeightedLoss(nn.Module, ABC):
+    """
+    <p>Base class for weighted loss functions, where different samples are given different importance.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds:dict, weights:dict):
         super().__init__()
 
@@ -137,8 +200,6 @@ class WeightedLoss(nn.Module, ABC):
     def weighted_loss_tensor(self, target: torch.Tensor) -> torch.Tensor:        
         batch, variables, horizon = target.shape  # Example shape (32, 4, 6)
         variable, max_range, interval = self.ranges.shape  # Example shape (4, 4, 2)
-
-        print()
 
         target_shaped = torch.reshape(target, (batch, variables, 1, horizon))  # Example shape (32, 4, 6) -> (32, 4, 1, 6)
         ranges_shaped = torch.reshape(self.ranges, (variable, max_range, 1, interval))  # Example shape (4, 4, 2) -> (4, 4, 1, 2)
@@ -196,6 +257,15 @@ class WeightedLoss(nn.Module, ABC):
 
 # %% ../nbs/losses.ipynb 20
 class wMSELoss(WeightedLoss):
+    """
+    <p>Weighted Mean Squared Error Loss (wMSELoss) is the weighted version of MSE, giving different importance to different samples.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds, weights):
         super().__init__(thresholds, weights)
 
@@ -206,6 +276,15 @@ class wMSELoss(WeightedLoss):
 
     
 class wMAELoss(WeightedLoss):
+    """
+    <p>Weighted Mean Absolute Error Loss (wMAELoss) is the weighted version of MAE, giving different importance to different samples.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds, weights):
         super().__init__(thresholds, weights)
 
@@ -215,6 +294,15 @@ class wMAELoss(WeightedLoss):
 
     
 class wMSLELoss(WeightedLoss):
+    """
+    <p>Weighted Mean Squared Logarithmic Error Loss (wMSLELoss) is the weighted version of MSLE, penalizing underestimations more than overestimations.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds, weights):
         super().__init__(thresholds, weights)
     
@@ -224,6 +312,15 @@ class wMSLELoss(WeightedLoss):
 
 
 class wRMSLELoss(nn.Module):
+    """
+    <p>Weighted Root Mean Squared Logarithmic Error Loss (wRMSLELoss) is the weighted version of RMSLE, useful for reducing the impact of outliers.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds, weights):
         super().__init__()
         self.msle_loss = wMSLELoss(thresholds, weights)
@@ -234,6 +331,16 @@ class wRMSLELoss(nn.Module):
 
 
 class wHubberLoss(WeightedLoss):
+    """
+    <p>Weighted Huber Loss (wHubberLoss) combines the characteristics of both MSE and MAE, with weights for different samples.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: 'mean'.</li>
+        <li>delta (float): Threshold from where the loss changes from MAE to MSE-like functioning.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds, weights, delta=2.0):
         super().__init__(thresholds, weights)
         self.delta = delta
@@ -244,6 +351,16 @@ class wHubberLoss(WeightedLoss):
 
 
 class wQuantileLoss(WeightedLoss):
+    """
+    <p>Weighted Quantile Loss is used for regression tasks with weighted samples where we want to predict a specific quantile.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>quantile (float): The quantile to be predicted, usually a value between 0 and 1.</li>
+        <li>weights (Tensor): Weights assigned to each sample in the batch.</li>
+        <li>thresholds (Tensor): Threshold values for weighted computation.</li>
+    </ul>
+    """
     def __init__(self, thresholds, weights, quantile=0.5):
         super().__init__(thresholds, weights)
         self.quantile = quantile
@@ -253,12 +370,21 @@ class wQuantileLoss(WeightedLoss):
 
 # %% ../nbs/losses.ipynb 23
 class ClassificationLoss(WeightedLoss):
-    def __init__(self, thresholds, loss, alpha=0.5):
+    """
+    <p>Loss function for classification tasks, suitable for handling imbalanced classes and other classification-specific challenges.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>reduction (str): Method for reducing the loss value across batches | <i><u>Default</u></i>: None.</li>
+        <li>primary_loss (Loss): The base loss function used for classification.</li>
+        <li>alpha (float): Weighting factor for balancing the importance of different classes.</li>
+    </ul>
+    """
+    def __init__(self, thresholds, primary_loss, alpha=0.5):
         n_variables = len(thresholds.keys())
         weights = {'All': np.arange(n_variables)}
         super().__init__(thresholds, weights)
 
-        self.loss = loss
+        self.loss = primary_loss
 
         if alpha < 0 or alpha > 1:
             raise ValueError('Alpha must be between 0 and 1, as it is the weight of the categorical loss against the other loss.')
@@ -291,9 +417,16 @@ class ClassificationLoss(WeightedLoss):
 
 # %% ../nbs/losses.ipynb 25
 class TrendedLoss(nn.Module):
-    def __init__(self, loss: Loss):
+    """
+    <p>Trended Loss incorporates trends in the data to adjust the loss computation accordingly.</p>
+    <h3>Attributes:</h3>
+    <ul>
+        <li>primary_loss (Loss): The base loss function used in combination with trend adjustments.</li>
+    </ul>
+    """
+    def __init__(self, primary_loss: Loss):
         super().__init__()
-        self.loss = loss
+        self.loss = primary_loss
 
     @staticmethod
     def _slope(y):
@@ -320,3 +453,101 @@ class TrendedLoss(nn.Module):
         loss = (error * weights).mean()
 
         return loss
+
+# %% ../nbs/losses.ipynb 27
+class LossFactory:
+    losses = {
+        'MSE': MSELoss,
+        'MAE': MAELoss,
+        'MSLE': MSELoss,
+        'RMSLE': RMSLELoss,
+        'Hubber': HubberLoss,
+        'Quantile': QuantileLoss,
+        'wMSE': wMSELoss,
+        'wMAE': wMAELoss,
+        'wMSLE': wMSLELoss,
+        'wRMSLE': wRMSLELoss,
+        'wHubber': wHubberLoss,
+        'wQuantile': wQuantileLoss,
+        'Classification': ClassificationLoss,
+        'Trended': TrendedLoss
+    }
+
+    def __init__(self, thresholds, weights):
+        self.thresholds = thresholds
+        self.weights = weights
+
+    @classmethod
+    def list(cls):
+        from IPython.display import HTML, display
+
+        table_rows = []
+        
+        # Generate rows for the table
+        for key, value in cls.losses.items():
+            doc_html = value.__doc__.strip().replace("\n", " ")
+            table_rows.append(f"<tr><td style='text-align: left;'><strong>{key}</strong></td><td style='text-align: left;'>{doc_html}</td></tr>")
+        
+        # Create the HTML for the table with left-aligned text
+        table_html = f"""
+        <table>
+            <thead>
+                <tr>
+                    <th style='text-align: left;'>Loss Name</th>
+                    <th style='text-align: left;'>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {''.join(table_rows)}
+            </tbody>
+        </table>
+        """
+        
+        display(HTML(table_html))
+
+
+
+    def create(self, loss_name:str='MSE', **kwargs) -> nn.Module: 
+        if loss_name in LossFactory.losses:
+            if loss_name.__contains__('w'):
+
+                if loss_name == 'hubber':
+                    delta = kwargs.get('delta', 2.0)
+                    return wHubberLoss(
+                            thresholds=self.thresholds, 
+                            weights=self.weights, 
+                            delta=delta
+                        )
+                
+                elif loss_name == 'quantile':
+                    quantile = kwargs.get('quantile', 0.5)
+                    return wQuantileLoss(
+                            thresholds=self.thresholds, 
+                            weights=self.weights, 
+                            quantile=quantile
+                        )
+                
+                else:
+                    return LossFactory.losses[loss_name](
+                                thresholds=self.thresholds, 
+                                weights=self.weights
+                            )
+                
+            elif loss_name == 'classification':
+                alpha = kwargs.get('alpha', 0.5)
+                primary_loss = kwargs.get('primary_loss', MSELoss())
+                return ClassificationLoss(
+                            thresholds=self.thresholds,
+                            primary_loss=primary_loss,
+                            alpha=alpha
+                        )
+            
+            elif loss_name == 'trended':
+                primary_loss = kwargs.get('primary_loss', MSELoss())
+                return TrendedLoss(primary_loss=primary_loss)
+            
+            else:
+                return LossFactory.losses[loss_name]()
+        else:
+            raise ValueError(f'Loss {loss_name} not found. Available losses are: {list(cls.losses.keys())}')
+    
