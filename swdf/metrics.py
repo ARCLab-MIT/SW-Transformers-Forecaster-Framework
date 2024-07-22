@@ -806,6 +806,17 @@ class BiasMetrics(Metrics):
 
 # %% ../nbs/metrics.ipynb 39
 class ValidationMetricsFactory:
+    """
+    <p>A factory class to manage validation metrics for model evaluation. It allows listing available metrics, uploading requested metrics, and retrieving study directions and objective values.</p>
+    
+    <h3>Attributes:</h3>
+    <ul>
+        <li>available_metrics (list)[<i>Static</i>]: A list of available metrics provided by different metric classes.</li>
+        <li>study_directions (dict)[<i>Static</i>]: A dictionary mapping metrics to their respective optimization directions (maximize or minimize).</li>
+        <li>requested_metrics (dict): A dictionary storing metrics that have been requested for evaluation.</li>
+    </ul>
+    """
+    
     available_metrics = [
         *F1ScoreMetrics(metrics='All').get_metrics(),
         *AUPRCMetric().get_metrics(),
@@ -834,24 +845,25 @@ class ValidationMetricsFactory:
     }
 
     def __init__(self):
+
         self.requested_metrics = {}
 
-    
     @classmethod
     def list(cls):
+        """
+        <p>Display a list of available metrics along with their descriptions in a table format.</p>
+        """
         table_rows = []
         
-        # Generate rows for the table
         for metric in cls.available_metrics:
             doc_html = metric.__doc__.strip().replace("\n", " ")
             table_rows.append(f"<tr><td style='text-align: left;'><strong>{metric.__name__}</strong></td><td style='text-align: left;'>{doc_html}</td></tr>")
         
-        # Create the HTML for the table with left-aligned text
         table_html = f"""
         <table>
             <thead>
                 <tr>
-                    <th style='text-align: left;'>Loss Name</th>
+                    <th style='text-align: left;'>Metric Name</th>
                     <th style='text-align: left;'>Description</th>
                 </tr>
             </thead>
@@ -862,9 +874,21 @@ class ValidationMetricsFactory:
         """
         
         display(HTML(table_html))
-    
 
+
+    # Request of metrics
     def upload(self, metrics:list):
+        """
+        <p>Upload a list of metrics to the factory for evaluation. The metrics are converted to lowercase for consistency.</p>
+        
+        <h3>Parameters:</h3>
+        <ul>
+            <li>metrics (list): A list of metric names to be uploaded for evaluation.</li>
+        </ul>
+        
+        <h3>Raises:</h3>
+        <p>ValueError: If any metric in the provided list is not found in the available metrics.</p>
+        """
         metrics = [metric.lower() for metric in metrics]
 
         for metric in ValidationMetricsFactory.available_metrics:
@@ -877,20 +901,49 @@ class ValidationMetricsFactory:
             raise ValueError(f"Metrics not found: {metrics}. Please use ValidationMetricsFactory.list() to see available metrics.")
         
     def _validate_upload(self):
+        """
+        <p>Validate that at least one metric has been uploaded. Raises an error if no metrics are found.</p>
+        
+        <h3>Raises:</h3>
+        <p>RuntimeError: If no metrics have been requested for evaluation.</p>
+        """
         if len(self.requested_metrics) == 0:
             raise RuntimeError("No metrics requested. Please use ValidationMetricsFactory.upload() to specify metrics.")
-        
 
-        
+
+    # Creation functions
     def get_metrics(self) -> list:
+        """
+        <p>Retrieve the list of requested metrics for evaluation.</p>
+        
+        <h3>Returns:</h3>
+        <p>list: A list of requested metric objects.</p>
+        """
         self._validate_upload()
         return list(self.requested_metrics.values())
-    
+
     def get_study_directions(self) -> list:    
+        """
+        <p>Retrieve the study directions (maximize or minimize) for the requested metrics.</p>
+        
+        <h3>Returns:</h3>
+        <p>list: A list of study directions corresponding to the requested metrics.</p>
+        """
         self._validate_upload()    
         return [self.study_directions[metric] for metric in self.requested_metrics.keys()]
     
     def get_objective_values(self, metrics_results:List[AvgMetric]) -> list:
+        """
+        <p>Extract the objective values from the results of the requested metrics.</p>
+        
+        <h3>Parameters:</h3>
+        <ul>
+            <li>metrics_results (List[AvgMetric]): A list of metric result objects from which to extract values.</li>
+        </ul>
+        
+        <h3>Returns:</h3>
+        <p>list: A list of metric values extracted from the provided results.</p>
+        """
         self._validate_upload()
         return [metric_result.value for metric_result in metrics_results]
 
