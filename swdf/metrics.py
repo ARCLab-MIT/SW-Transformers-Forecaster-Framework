@@ -4,7 +4,7 @@
 __all__ = ['Metrics', 'RegressiveMetrics', 'SOLFMYMetrics', 'GEODSTAPMetrics', 'ClassificationMetrics',
            'SOLFMYClassificationMetrics', 'GEODSTAPClassificationMetrics', 'LossMetrics', 'OutlierDetectionMetrics',
            'F1ScoreMetrics', 'AUPRCMetric', 'KSDifferenceMetric', 'AssociationMetrics', 'AccuracyMetrics',
-           'BiasMetrics']
+           'BiasMetrics', 'ValidationMetricsFactory']
 
 # %% ../nbs/metrics.ipynb 0
 import sys
@@ -16,6 +16,8 @@ import pandas as pd
 from tsai.basics import *
 from .losses import wMAELoss, MSELoss, WeightedLoss, ClassificationLoss
 from sklearn.metrics import precision_recall_curve, auc
+from optuna.study import StudyDirection
+
 
 
 
@@ -393,6 +395,18 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
 
     # Metrics
     def Precision(self, y_true, y_pred):
+        """
+        <p>Calculate the precision metric, which measures the ratio of correctly predicted positive observations to the total predicted positives.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Precision score<p>
+        """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
 
         # To avoid divide by 0
@@ -402,8 +416,21 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
             precision = torch.tensor(0.0)
 
         return precision
+
     
     def Recall(self, y_true, y_pred):
+        """
+        <p>Calculate the recall metric, which measures the ratio of correctly predicted positive observations to all observations in the actual class.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Recall score<p>
+        """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
 
         if (stats.tp + stats.fn) > 0:
@@ -412,8 +439,21 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
             recall = torch.tensor(0.0)
 
         return recall
+
     
     def F1_Score(self, y_true, y_pred):
+        """
+        <p>Calculate the F1 score, which is the harmonic mean of precision and recall. It is used as a measure of a model’s accuracy on a dataset.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: F1 score<p>
+        """
         precision = self.Precision(y_true, y_pred)
         recall = self.Recall(y_true, y_pred)
 
@@ -423,32 +463,84 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
             f1_score = torch.tensor(0.0)
 
         return f1_score
+
     
     def Accuracy_Score(self, y_true, y_pred):
+        """
+        <p>Calculate the accuracy score, which is the ratio of correctly predicted observations to the total observations.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Accuracy score<p>
+        """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
-        
+            
         if (stats.tp + stats.fp + stats.fn + stats.tn) > 0:
             return (stats.tp + stats.tn) / (stats.tp + stats.fp + stats.fn + stats.tn)
         else:
             return torch.tensor(0.0)
+
     
     def Specificity(self, y_true, y_pred):
+        """
+        <p>Calculate the specificity metric, which measures the proportion of true negatives that are correctly identified.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Specificity score<p>
+        """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
-        
+            
         if (stats.tn + stats.fp) > 0:
             return stats.tn / (stats.tn + stats.fp)
         else:
             return torch.tensor(0.0)
 
+
     def Negative_Predictive_Value(self, y_true, y_pred):
+        """
+        <p>Calculate the Negative Predictive Value (NPV), which measures the proportion of true negatives among all negative predictions.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Negative Predictive Value score<p>
+        """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
 
         if (stats.tn + stats.fn) > 0:
             return stats.tn / (stats.tn + stats.fn)
         else:
             return torch.tensor(0.0)
+
     
-    def Δ_Detected_Outliers (self, y_true, y_pred):
+    def Detected_Outliers_Difference (self, y_true, y_pred):
+        """
+        <p>Calculate the change in detected outliers (Δ Detected Outliers), representing the number of true outliers not predicted as outliers.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Count of undetected outliers<p>
+        """    
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
         
         return torch.sum(stats.true_outliers & ~stats.predicted_outliers)
@@ -459,9 +551,9 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         if self.metrics == 'F1_Score':
             return [self.F1_Score]
         elif self.metrics == 'All':
-            return [self.Precision, self.Recall, self.F1_Score, self.Accuracy_Score, self.Specificity, self.Negative_Predictive_Value, self.Δ_Detected_Outliers ]
+            return [self.Precision, self.Recall, self.F1_Score, self.Accuracy_Score, self.Specificity, self.Negative_Predictive_Value, self.Detected_Outliers_Difference ]
         else:
-            return [self.Precision, self.Recall, self.F1_Score, self.Δ_Detected_Outliers ]
+            return [self.Precision, self.Recall, self.F1_Score, self.Detected_Outliers_Difference ]
 
 # %% ../nbs/metrics.ipynb 26
 class AUPRCMetric(OutlierDetectionMetrics):
@@ -472,14 +564,16 @@ class AUPRCMetric(OutlierDetectionMetrics):
     # Metrics
     def AURPC(self, y_true, y_pred):
         """
-        Calculate the Area Under the Precision-Recall Curve (AUPRC).
+        <p>Calculate the Area Under the Precision-Recall Curve (AUPRC), a 
+        metric used to evaluate the effectiveness of a model in identifying rare, important events (outliers)</p>
         
-        Parameters:
-        y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)
-        y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
         
-        Returns:
-        torch.Tensor: AUPRC score
+        <h3>Returns:</h3>
+        <p>torch.Tensor: AUPRC score<p>
         """
         pred_z_scores = self._modified_z_score(y_pred)
         
@@ -522,22 +616,49 @@ class KSDifferenceMetric(Metrics):
     
 
     # Metrics
-    def Δ_Skewness(self, y_true, y_pred):
+    def Skewness_Difference(self, y_true, y_pred):
+        """
+        <p>Calculate the absolute difference in skewness between the actual and predicted values, which measures the asymmetry of the data distribution.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Absolute difference in skewness between y_true and y_pred<p>
+        """
         true_skewness = KSDifferenceMetric.skewness(y_true)
         pred_skewness = KSDifferenceMetric.skewness(y_pred)
         
         return torch.abs(true_skewness - pred_skewness)
+
     
-    def Δ_Kurtosis(self, y_true, y_pred):
+    def Kurtosis_Difference(self, y_true, y_pred):
+        """
+        <p>Calculate the absolute difference in kurtosis between the actual and predicted values, which measures the tailedness of the data distribution.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>torch.Tensor: Absolute difference in kurtosis between y_true and y_pred<p>
+        """
         true_kurtosis = KSDifferenceMetric.kurtosis(y_true)
         pred_kurtosis = KSDifferenceMetric.kurtosis(y_pred)
         
         return torch.abs(true_kurtosis - pred_kurtosis)
+
+
         
 
     # Metrics retrieval function
     def get_metrics(self) -> list:
-        return [self.Δ_Skewness, self.Δ_Kurtosis]
+        return [self.Skewness_Difference, self.Kurtosis_Difference]
 
 # %% ../nbs/metrics.ipynb 31
 class AssociationMetrics(Metrics):
@@ -547,14 +668,16 @@ class AssociationMetrics(Metrics):
     # Metrics
     def R_Correlation(self, y_true, y_pred):
         """
-        Calculate the Pearson Correlation Coefficient (R Correlation) between true and predicted values.
+        <p>Calculate the Pearson Correlation Coefficient (R Correlation) between true and predicted values.</p>
         
-        Parameters:
-        y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)
-        y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
         
-        Returns:
-        torch.Tensor: R Correlation coefficient
+        <h3>Returns:</h3>
+        <p>torch.Tensor: R Correlation coefficient<p>
         """
         y_true_flat = y_true.view(-1)
         y_pred_flat = y_pred.view(-1)
@@ -567,19 +690,21 @@ class AssociationMetrics(Metrics):
         r_value = corr_matrix[0, 1]
         return r_value
 
+
     def R2_Score(self, y_true, y_pred):
         """
-        Calculate the R^2 score.
+        <p>Calculate the R^2 score, which measures the proportion of the variance in the dependent variable that is predictable from the independent variable(s).</p>
         
-        Parameters:
-        y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)
-        y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
         
-        Returns:
-        torch.Tensor: R^2 score
+        <h3>Returns:</h3>
+        <p>torch.Tensor: R^2 score<p>
         """
         y_true_mean = torch.mean(y_true, dim=2, keepdim=True)
-        print(y_true_mean.shape, y_true.shape)
         
         # Total Sum of Squares
         ss_tot = torch.sum((y_true - y_true_mean) ** 2)
@@ -590,7 +715,7 @@ class AssociationMetrics(Metrics):
         r2 = 1 - ss_res / ss_tot
         
         return r2
-    
+
     
     # Metrics retrieval function
     def get_metrics(self) -> list:
@@ -655,14 +780,16 @@ class BiasMetrics(Metrics):
     # Metrics
     def SSPB(self, y_true, y_pred):
         """
-        Calculate the Symmetric Signed Percentage Bias (SSPB).
+        <p>Calculate the Symmetric Signed Percentage Bias (SSPB), which measures the percentage bias with consideration for the direction of the bias.</p>
         
-        Parameters:
-        y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)
-        y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true
+        <h3>Parameters:</h3>
+        <ul>
+            <li>y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)</li>
+            <li>y_pred (torch.Tensor): Predicted values tensor of the same shape as y_true</li>
+        </ul>
         
-        Returns:
-        torch.Tensor: SSPB value
+        <h3>Returns:</h3>
+        <p>torch.Tensor: SSPB value<p>
         """
         log_ratio = torch.log(y_pred / y_true)
         median_log_ratio = torch.median(log_ratio)
@@ -672,6 +799,98 @@ class BiasMetrics(Metrics):
         return sign * (torch.exp(torch.abs(median_log_ratio)) - 1) * 100
 
 
+
     # Metrics retrieval function
     def get_metrics(self) -> list:
         return [self.SSPB]
+
+# %% ../nbs/metrics.ipynb 39
+class ValidationMetricsFactory:
+    available_metrics = [
+        *F1ScoreMetrics(metrics='All').get_metrics(),
+        *AUPRCMetric().get_metrics(),
+        *KSDifferenceMetric().get_metrics(),
+        *AssociationMetrics().get_metrics(),
+        *AccuracyMetrics().get_metrics(),
+        *BiasMetrics().get_metrics()
+    ]
+
+    study_directions = {
+        'precision': StudyDirection.MAXIMIZE,                    # Higher precision is better
+        'recall': StudyDirection.MAXIMIZE,                       # Higher recall is better
+        'f1_score': StudyDirection.MAXIMIZE,                     # Higher F1 score is better
+        'accuracy_score': StudyDirection.MAXIMIZE,               # Higher accuracy is better
+        'specificity': StudyDirection.MAXIMIZE,                  # Higher specificity is better
+        'negative_predictive_value': StudyDirection.MAXIMIZE,    # Higher NPV is better
+        'detected_outliers_difference': StudyDirection.MINIMIZE, # Minimize the difference in detected outliers
+        'aurpc': StudyDirection.MAXIMIZE,                        # Higher AUPRC is better
+        'skewness_difference': StudyDirection.MINIMIZE,          # Minimize skewness difference to target
+        'kurtosis_difference': StudyDirection.MINIMIZE,          # Minimize kurtosis difference to target
+        'r_correlation': StudyDirection.MAXIMIZE,                # Higher Pearson correlation is better
+        'r2_score': StudyDirection.MAXIMIZE,                     # Higher R² is better
+        'smape': StudyDirection.MINIMIZE,                        # Lower SMAPE is better
+        'msa': StudyDirection.MAXIMIZE,                          # Higher MSA is better
+        'sspb': StudyDirection.MINIMIZE                          # Minimize absolute SSPB (optimize for bias close to zero)
+    }
+
+    def __init__(self):
+        self.requested_metrics = {}
+
+    
+    @classmethod
+    def list(cls):
+        table_rows = []
+        
+        # Generate rows for the table
+        for metric in cls.available_metrics:
+            doc_html = metric.__doc__.strip().replace("\n", " ")
+            table_rows.append(f"<tr><td style='text-align: left;'><strong>{metric.__name__}</strong></td><td style='text-align: left;'>{doc_html}</td></tr>")
+        
+        # Create the HTML for the table with left-aligned text
+        table_html = f"""
+        <table>
+            <thead>
+                <tr>
+                    <th style='text-align: left;'>Loss Name</th>
+                    <th style='text-align: left;'>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {''.join(table_rows)}
+            </tbody>
+        </table>
+        """
+        
+        display(HTML(table_html))
+    
+
+    def upload(self, metrics:list):
+        metrics = [metric.lower() for metric in metrics]
+
+        for metric in ValidationMetricsFactory.available_metrics:
+            metric_name = metric.__name__.lower()
+            if metric_name in metrics:
+                self.requested_metrics[metric_name] = metric
+                metrics.remove(metric.__name__.lower())
+        
+        if len(metrics) > 0:
+            raise ValueError(f"Metrics not found: {metrics}. Please use ValidationMetricsFactory.list() to see available metrics.")
+        
+    def _validate_upload(self):
+        if len(self.requested_metrics) == 0:
+            raise RuntimeError("No metrics requested. Please use ValidationMetricsFactory.upload() to specify metrics.")
+        
+
+        
+    def get_metrics(self) -> list:
+        self._validate_upload()
+        return list(self.requested_metrics.values())
+    
+    def get_study_directions(self) -> list:    
+        self._validate_upload()    
+        return [self.study_directions[metric] for metric in self.requested_metrics.keys()]
+    
+    def get_objective_values(self, metrics_results:List[AvgMetric]) -> list:
+        self._validate_upload()
+        return [metric_result.value for metric_result in metrics_results]
+
