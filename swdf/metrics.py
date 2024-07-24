@@ -4,7 +4,7 @@
 __all__ = ['Metrics', 'RegressiveMetrics', 'SOLFMYMetrics', 'GEODSTAPMetrics', 'ClassificationMetrics',
            'SOLFMYClassificationMetrics', 'GEODSTAPClassificationMetrics', 'LossMetrics', 'OutlierDetectionMetrics',
            'F1ScoreMetrics', 'AUPRCMetric', 'KSDifferenceMetric', 'AssociationMetrics', 'AccuracyMetrics',
-           'BiasMetrics', 'ValidationMetricsFactory']
+           'BiasMetrics', 'ValidationMetricsHandler']
 
 # %% ../nbs/metrics.ipynb 0
 import sys
@@ -712,7 +712,10 @@ class AssociationMetrics(Metrics):
         # Residual Sum of Squares
         ss_res = torch.sum((y_true - y_pred) ** 2)
         
-        r2 = 1 - ss_res / ss_tot
+        if ss_tot == 0:
+            r2 = torch.tensor(0.0)
+        else:
+            r2 = 1 - ss_res / ss_tot
         
         return r2
 
@@ -805,9 +808,9 @@ class BiasMetrics(Metrics):
         return [self.SSPB]
 
 # %% ../nbs/metrics.ipynb 39
-class ValidationMetricsFactory:
+class ValidationMetricsHandler:
     """
-    <p>A factory class to manage validation metrics for model evaluation. It allows listing available metrics, uploading requested metrics, and retrieving study directions and objective values.</p>
+    <p>A class to manage validation metrics for model evaluation. It allows listing available metrics, uploading requested metrics, and retrieving study directions and objective values.</p>
     
     <h3>Attributes:</h3>
     <ul>
@@ -844,9 +847,9 @@ class ValidationMetricsFactory:
         'sspb': StudyDirection.MINIMIZE                          # Minimize absolute SSPB (optimize for bias close to zero)
     }
 
-    def __init__(self):
-
+    def __init__(self, metrics:list):
         self.requested_metrics = {}
+        self.add(metrics)
 
     @classmethod
     def list(cls):
@@ -877,7 +880,7 @@ class ValidationMetricsFactory:
 
 
     # Request of metrics
-    def upload(self, metrics:list):
+    def add(self, metrics:list):
         """
         <p>Upload a list of metrics to the factory for evaluation. The metrics are converted to lowercase for consistency.</p>
         
@@ -891,7 +894,7 @@ class ValidationMetricsFactory:
         """
         metrics = [metric.lower() for metric in metrics]
 
-        for metric in ValidationMetricsFactory.available_metrics:
+        for metric in ValidationMetricsHandler.available_metrics:
             metric_name = metric.__name__.lower()
             if metric_name in metrics:
                 self.requested_metrics[metric_name] = metric
@@ -900,16 +903,26 @@ class ValidationMetricsFactory:
         if len(metrics) > 0:
             raise ValueError(f"Metrics not found: {metrics}. Please use ValidationMetricsFactory.list() to see available metrics.")
         
-    def _validate_upload(self):
+    def remove(self, metrics:list):
         """
-        <p>Validate that at least one metric has been uploaded. Raises an error if no metrics are found.</p>
+        <p>Remove a list of metrics from the factory that were previously uploaded for evaluation. The metrics are converted to lowercase for consistency.</p>
+        
+        <h3>Parameters:</h3>
+        <ul>
+            <li>metrics (list): A list of metric names to be removed from evaluation.</li>
+        </ul>
         
         <h3>Raises:</h3>
-        <p>RuntimeError: If no metrics have been requested for evaluation.</p>
+        <p>ValueError: If any metric in the provided list is not found in the requested metrics.</p>
         """
-        if len(self.requested_metrics) == 0:
-            raise RuntimeError("No metrics requested. Please use ValidationMetricsFactory.upload() to specify metrics.")
+        metrics = [metric.lower() for metric in metrics]
 
+        for metric in metrics:
+            if metric in self.requested_metrics:
+                self.requested_metrics.pop(metric)
+            else:
+                raise ValueError(f"Metric not found: {metric}. Please use ValidationMetricsFactory.get_metrics() to see requested metrics.")
+        
 
     # Creation functions
     def get_metrics(self) -> list:
@@ -919,7 +932,6 @@ class ValidationMetricsFactory:
         <h3>Returns:</h3>
         <p>list: A list of requested metric objects.</p>
         """
-        self._validate_upload()
         return list(self.requested_metrics.values())
 
     def get_study_directions(self) -> list:    
@@ -929,7 +941,6 @@ class ValidationMetricsFactory:
         <h3>Returns:</h3>
         <p>list: A list of study directions corresponding to the requested metrics.</p>
         """
-        self._validate_upload()    
         return [self.study_directions[metric] for metric in self.requested_metrics.keys()]
     
     def get_objective_values(self, metrics_results:List[AvgMetric]) -> list:
@@ -944,6 +955,52 @@ class ValidationMetricsFactory:
         <h3>Returns:</h3>
         <p>list: A list of metric values extracted from the provided results.</p>
         """
-        self._validate_upload()
-        return [metric_result.value for metric_result in metrics_results]
+        object_values = []
+        for metric, requested_metric in zip(metrics_results, self.requested_metrics.keys()):
+            metric_name = metric.name.lower()
+
+            if metric_name == requested_metric:
+                # As SSPB could be positive or negative, but the better is to be closer to 0
+                if metric_name == 'sspb':
+                    object_values.append(np.abs(metric.value)) 
+                else:
+                    object_values.append(metric.value)
+            else:
+                raise ValueError(f"Unexpected metric found: {metric_name}. Expected: {requested_metric}")
+            
+            
+        return (metric_result.value for metric_result in metrics_results)
+    
+
+    @classmethod
+    def are_best_values(cls, main_metric: str, best_values, trial_values) -> bool:
+        """
+        <p>Determine if the trial values are better than the current best values for a given metric.</p>
+        
+        <h3>Parameters:</h3>
+        <ul>
+            <li><b>main_metric</b> (str): The name of the main metric used for comparison.</li>
+            <li><b>best_values</b> (list): A list of current best values for various metrics.</li>
+            <li><b>trial_values</b> (list): A list of new trial values to compare against the best values.</li>
+        </ul>
+        
+        <h3>Returns:</h3>
+        <p>bool: True if the trial values are overall better than the best values, False otherwise.</p>
+        """
+        main_metric = main_metric.lower()
+        improvement = 0
+
+        if best_values is None:
+            return True
+        
+        for best_metric, trial_metric in zip(best_values, trial_values):
+            direction = cls.study_directions[best_metric.name.lower()]
+
+            if direction == StudyDirection.MAXIMIZE and trial_metric > best_metric:
+                improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
+            elif direction == StudyDirection.MINIMIZE and trial_metric < best_metric:
+                improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
+
+        return improvement > len(best_values) // 2
+        
 

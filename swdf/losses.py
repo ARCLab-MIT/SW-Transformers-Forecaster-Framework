@@ -474,7 +474,7 @@ class LossFactory:
         'Trended': TrendedLoss
     }
 
-    def __init__(self, thresholds, weights):
+    def __init__(self, thresholds=None, weights=None):
         self.thresholds = thresholds
         self.weights = weights
 
@@ -506,50 +506,50 @@ class LossFactory:
 
 
 
-    def create(self, loss_name:str='MSE', **kwargs) -> nn.Module: 
+    def create(self, loss_name: str = 'MSE', **kwargs) -> nn.Module:
+        """
+        <p>Create and return a loss function based on the provided loss name and additional parameters.</p>
+
+        <h3>Parameters:</h3>
+        <ul>
+            <li><b>loss_name</b> (str): The name of the loss function to create. Default is 'MSE'.</li>
+            <li><b>kwargs</b>: Additional keyword arguments specific to certain loss functions.</li>
+        </ul>
+
+        <h3>Returns:</h3>
+        <p>nn.Module: The instantiated loss function module.</p>
+
+        <h3>Raises:</h3>
+        <p>ValueError: If the specified loss function is not found.</p>
+        """
         searched_loss = loss_name.lower()
-        available_losses = [k.lower() for k in LossFactory.losses.keys()]
+        available_losses = {k.lower(): k for k in LossFactory.losses.keys()}
 
-        if searched_loss in available_losses:
-            if searched_loss.__contains__('w'):
-
-                if searched_loss == 'hubber':
-                    delta = kwargs.get('delta', 2.0)
-                    return wHubberLoss(
-                            thresholds=self.thresholds, 
-                            weights=self.weights, 
-                            delta=delta
-                        )
-                
-                elif searched_loss == 'quantile':
-                    quantile = kwargs.get('quantile', 0.5)
-                    return wQuantileLoss(
-                            thresholds=self.thresholds, 
-                            weights=self.weights, 
-                            quantile=quantile
-                        )
-                
-                else:
-                    return LossFactory.losses[loss_name](
-                                thresholds=self.thresholds, 
-                                weights=self.weights
-                            )
-                
-            elif searched_loss == 'classification':
-                alpha = kwargs.get('alpha', 0.5)
-                primary_loss = kwargs.get('primary_loss', MSELoss())
-                return ClassificationLoss(
-                            thresholds=self.thresholds,
-                            primary_loss=primary_loss,
-                            alpha=alpha
-                        )
-            
-            elif searched_loss == 'trended':
-                primary_loss = kwargs.get('primary_loss', MSELoss())
-                return TrendedLoss(primary_loss=primary_loss)
-            
-            else:
-                return LossFactory.losses[loss_name]()
-        else:
+        if searched_loss not in available_losses:
             raise ValueError(f'Loss {loss_name} not found. Run LossFactory.list() to see available losses.')
-    
+
+        if 'w' in searched_loss and (self.thresholds is not None or self.weights is not None):
+            if searched_loss == 'whubber':
+                return wHubberLoss(thresholds=self.thresholds, weights=self.weights, delta=kwargs.get('delta', 2.0))
+            elif searched_loss == 'wquantile':
+                return wQuantileLoss(thresholds=self.thresholds, weights=self.weights, quantile=kwargs.get('quantile', 0.5))
+            else:
+                return LossFactory.losses[available_losses[searched_loss]](thresholds=self.thresholds, weights=self.weights)
+
+        if searched_loss == 'classification':
+            return ClassificationLoss(
+                thresholds=self.thresholds,
+                primary_loss=kwargs.get('primary_loss', MSELoss()),
+                alpha=kwargs.get('alpha', 0.5)
+            )
+
+        if searched_loss == 'trended':
+            return TrendedLoss(primary_loss=kwargs.get('primary_loss', MSELoss()))
+
+        if searched_loss == 'hubber':
+            return HubberLoss(reduction='mean', delta=kwargs.get('delta', 2.0))
+
+        if searched_loss == 'quantile':
+            return QuantileLoss(reduction='mean', quantile=kwargs.get('quantile', 0.5))
+
+        return LossFactory.losses[available_losses[searched_loss]](reduction='mean')
