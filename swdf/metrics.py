@@ -714,7 +714,7 @@ class AssociationMetrics(Metrics):
         if ss_tot == 0:
             r2 = torch.tensor(0.0)
         else:
-            r2 = 1 - ss_res / ss_tot
+            r2 = 1 - (ss_res / ss_tot)
         
         return r2
 
@@ -829,22 +829,23 @@ class ValidationMetricsHandler:
     ]
 
     study_directions = {
-        'precision': StudyDirection.MAXIMIZE,                    # Higher precision is better
-        'recall': StudyDirection.MAXIMIZE,                       # Higher recall is better
-        'f1_score': StudyDirection.MAXIMIZE,                     # Higher F1 score is better
-        'accuracy_score': StudyDirection.MAXIMIZE,               # Higher accuracy is better
-        'specificity': StudyDirection.MAXIMIZE,                  # Higher specificity is better
-        'negative_predictive_value': StudyDirection.MAXIMIZE,    # Higher NPV is better
-        'detected_outliers_difference': StudyDirection.MINIMIZE, # Minimize the difference in detected outliers
-        'aurpc': StudyDirection.MAXIMIZE,                        # Higher AUPRC is better
-        'skewness_difference': StudyDirection.MINIMIZE,          # Minimize skewness difference to target
-        'kurtosis_difference': StudyDirection.MINIMIZE,          # Minimize kurtosis difference to target
-        'r_correlation': StudyDirection.MAXIMIZE,                # Higher Pearson correlation is better
-        'r2_score': StudyDirection.MAXIMIZE,                     # Higher R² is better
-        'smape': StudyDirection.MINIMIZE,                        # Lower SMAPE is better
-        'msa': StudyDirection.MAXIMIZE,                          # Higher MSA is better
-        'sspb': StudyDirection.MINIMIZE                          # Minimize absolute SSPB (optimize for bias close to zero)
+        'precision': StudyDirection.MAXIMIZE,                    # Higher precision is better (Range: [0, 1])
+        'recall': StudyDirection.MAXIMIZE,                       # Higher recall is better (Range: [0, 1])
+        'f1_score': StudyDirection.MAXIMIZE,                     # Higher F1 score is better (Range: [0, 1])
+        'accuracy_score': StudyDirection.MAXIMIZE,               # Higher accuracy is better (Range: [0, 1])
+        'specificity': StudyDirection.MAXIMIZE,                  # Higher specificity is better (Range: [0, 1])
+        'negative_predictive_value': StudyDirection.MAXIMIZE,    # Higher NPV is better (Range: [0, 1])
+        'detected_outliers_difference': StudyDirection.MINIMIZE, # Minimize the difference in detected outliers (Range: [0, ∞))
+        'aurpc': StudyDirection.MAXIMIZE,                        # Higher AUPRC is better (Range: [0, 1])
+        'skewness_difference': StudyDirection.MINIMIZE,          # Minimize skewness difference to target (Range: [−∞, ∞])
+        'kurtosis_difference': StudyDirection.MINIMIZE,          # Minimize kurtosis difference to target (Range: [−∞, ∞])
+        'r_correlation': StudyDirection.MAXIMIZE,                # Higher Pearson correlation is better (Range: [−1, 1])
+        'r2_score': StudyDirection.MAXIMIZE,                     # Higher R² is better (Range: [−∞, 1])
+        'smape': StudyDirection.MINIMIZE,                        # Lower SMAPE is better (Range: [0, ∞))
+        'msa': StudyDirection.MAXIMIZE,                          # Higher MSA is better (Range: [0, 1])
+        'sspb': StudyDirection.MINIMIZE                          # Minimize absolute SSPB (optimize for bias close to zero) (Range: [−100%, 100%])
     }
+
 
     def __init__(self, metrics:list):
         self.requested_metrics = {}
@@ -992,13 +993,16 @@ class ValidationMetricsHandler:
         if best_values is None:
             return True
         
-        for best_metric, trial_metric in zip(best_values, trial_values):
-            direction = cls.study_directions[best_metric.name.lower()]
+        if len(best_values) > 1:
+            for best_metric, trial_metric in zip(best_values, trial_values):
+                direction = cls.study_directions[best_metric.name.lower()]
 
-            if direction == StudyDirection.MAXIMIZE and trial_metric > best_metric:
-                improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
-            elif direction == StudyDirection.MINIMIZE and trial_metric < best_metric:
-                improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
+                if direction == StudyDirection.MAXIMIZE and trial_metric > best_metric:
+                    improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
+                elif direction == StudyDirection.MINIMIZE and trial_metric < best_metric:
+                    improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
+        else:
+            return trial_values[0] > best_values[0] if cls.study_directions[trial_values.name] == StudyDirection.MAXIMIZE else trial_values[0] < best_values[0]
 
         return improvement > len(best_values) // 2
         
