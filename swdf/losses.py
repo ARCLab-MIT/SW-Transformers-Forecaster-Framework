@@ -450,7 +450,7 @@ class TrendedLoss(nn.Module):
         trend_diff = 1 + torch.abs(input_trend - target_trend)
 
         error = self.loss(input, target)
-        weights = trend_diff.reshape(batch,variables,1)
+        weights = trend_diff.reshape(batch,variables,1).to(error.device)
         loss = (error * weights).mean()
 
         return loss

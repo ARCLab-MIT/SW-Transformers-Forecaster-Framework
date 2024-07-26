@@ -600,18 +600,19 @@ class KSDifferenceMetric(Metrics):
 
     @staticmethod
     def skewness(x):
-        mean = torch.mean(x)
-        std_dev = torch.std(x, unbiased=False)
+        # As batches are randomly generated and each variable is independent
+        mean = torch.mean(x, dim=2, keepdim=True)
+        std_dev = torch.std(x, dim=2, unbiased=True, keepdim=True)
         
-        skewness = torch.mean(((x - mean) / std_dev) ** 3)
+        skewness = torch.mean(((x - mean) / std_dev) ** 3, dim=2)
         return skewness
 
     @staticmethod
     def kurtosis(x):
-        mean = torch.mean(x)
-        std_dev = torch.std(x, unbiased=False)
+        mean = torch.mean(x, dim=2, keepdim=True)
+        std_dev = torch.std(x, dim=2, unbiased=True, keepdim=True)
         
-        kurtosis = torch.mean(((x - mean) / std_dev) ** 4)
+        kurtosis = torch.mean(((x - mean) / std_dev) ** 4, dim=2)
         return kurtosis
     
 
@@ -632,7 +633,7 @@ class KSDifferenceMetric(Metrics):
         true_skewness = KSDifferenceMetric.skewness(y_true)
         pred_skewness = KSDifferenceMetric.skewness(y_pred)
         
-        return torch.abs(true_skewness - pred_skewness)
+        return torch.mean(torch.abs(true_skewness - pred_skewness), dim=[0, 1])
 
     
     def Kurtosis_Difference(self, y_true, y_pred):
@@ -651,10 +652,8 @@ class KSDifferenceMetric(Metrics):
         true_kurtosis = KSDifferenceMetric.kurtosis(y_true)
         pred_kurtosis = KSDifferenceMetric.kurtosis(y_pred)
         
-        return torch.abs(true_kurtosis - pred_kurtosis)
+        return torch.mean(torch.abs(true_kurtosis - pred_kurtosis), dim=[0, 1])
 
-
-        
 
     # Metrics retrieval function
     def get_metrics(self) -> list:
@@ -679,8 +678,8 @@ class AssociationMetrics(Metrics):
         <h3>Returns:</h3>
         <p>torch.Tensor: R Correlation coefficient<p>
         """
-        y_true_flat = y_true.view(-1)
-        y_pred_flat = y_pred.view(-1)
+        y_true_flat = y_true.reshape(-1)
+        y_pred_flat = y_pred.reshape(-1)
         
         # To be able to use torch.corrcoef, we need to stack the tensors
         stacked = torch.stack([y_true_flat, y_pred_flat])
