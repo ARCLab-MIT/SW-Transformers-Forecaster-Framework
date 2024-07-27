@@ -988,22 +988,37 @@ class ValidationMetricsHandler:
         <p>bool: True if the trial values are overall better than the best values, False otherwise.</p>
         """
         main_metric = main_metric.lower()
-        improvement = 0
 
         if best_values is None:
             return True
-        
-        if len(best_values) > 1:
-            for best_metric, trial_metric in zip(best_values, trial_values):
-                direction = cls.study_directions[best_metric.name.lower()]
 
-                if direction == StudyDirection.MAXIMIZE and trial_metric > best_metric:
-                    improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
-                elif direction == StudyDirection.MINIMIZE and trial_metric < best_metric:
-                    improvement += len(best_values) // 2 if main_metric == best_metric.name.lower() else 1
-        else:
-            return trial_values[0] > best_values[0] if cls.study_directions[trial_values.name] == StudyDirection.MAXIMIZE else trial_values[0] < best_values[0]
+        if len(best_values) == 1:
+            best_value = best_values[0]
+            trial_value = trial_values[0]
+            direction = cls.study_directions.get(main_metric)
 
-        return improvement > len(best_values) // 2
-        
+            if direction == StudyDirection.MAXIMIZE:
+                return trial_value > best_value
+            elif direction == StudyDirection.MINIMIZE:
+                return trial_value < best_value
+            return False
+
+        improvement_count = 0
+        for best_metric, trial_metric in zip(best_values, trial_values):
+            metric_name = best_metric.name.lower()
+            direction = cls.study_directions.get(metric_name)
+
+            if direction == StudyDirection.MAXIMIZE and trial_metric > best_metric:
+                if main_metric == metric_name:
+                    improvement_count += len(best_values) // 2
+                else:
+                    improvement_count += 1
+            elif direction == StudyDirection.MINIMIZE and trial_metric < best_metric:
+                if main_metric == metric_name:
+                    improvement_count += len(best_values) // 2
+                else:
+                    improvement_count += 1
+
+        return improvement_count > len(best_values) // 2
+            
 

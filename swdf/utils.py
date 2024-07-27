@@ -2,9 +2,9 @@
 
 # %% auto 0
 __all__ = ['config', 'plot_forecast_2', 'plot_solar_algorithm_performance', 'plot_solar_algorithm_performance_comparison',
-           'bold_best', 'convert_uuids_to_indices', 'create_latex_comparison_tables', 'get_classified_columns',
-           'euclidean_distance_dict', 'find_closest_distribution', 'sliding_window_generator', 'download_dst_data',
-           'generate_preprocessed_data']
+           'plot_solar_algorithm_performance_all_indices', 'bold_best', 'convert_uuids_to_indices',
+           'create_latex_comparison_tables', 'get_classified_columns', 'euclidean_distance_dict',
+           'find_closest_distribution', 'sliding_window_generator', 'download_dst_data', 'generate_preprocessed_data']
 
 # %% ../nbs/utils.ipynb 2
 import numpy as np
@@ -232,6 +232,112 @@ def plot_solar_algorithm_performance_comparison(df, df_paper, var, figsize=(10, 
             fig.tight_layout()
 
 # %% ../nbs/utils.ipynb 8
+def plot_solar_algorithm_performance_all_indices(df, df_paper, figsize=(40, 15), ylims=None, save_fig=False):
+    # Plot a grid where each row is a solar activity level, and each column is a variable.
+    # Each cell contains the percent error comparison.
+    # Input:
+    # df: DataFrame with the results of the forecasting experiment, with the columns
+    #     variable, condition, horizon, mean_percent, std_percent
+    # df_paper: DataFrame with the results from the paper for comparison
+    # figsize: figure size
+    # ylims: List with the y limits for percent error: [(percent_min, percent_max)]
+    # Output: None, but it plots the grid
+    
+    sals = ['low', 'moderate', 'elevated', 'high']
+    vars = ['F10', 'S10', 'M10', 'Y10']
+    
+    fig, axs = plt.subplots(len(sals), len(vars), figsize=figsize)
+    
+    for sal_idx, sal in enumerate(sals):
+        for var_idx, var in enumerate(vars):
+            df_var = df[(df['variable'] == var) & (df['condition'] == sal)]
+            df_paper_var = df_paper[(df_paper['variable'] == var) & (df_paper['condition'] == sal)]
+
+            # Determine min and max values for y-axis
+            min_val = df_var['mean_percent'].min() - np.abs(df_var['std_percent'].max()) if ylims is None else ylims[0][0]
+            max_val = df_var['mean_percent'].max() + np.abs(df_var['std_percent'].max()) if ylims is None else ylims[0][1]
+            
+            min_val_paper = df_paper_var['mean_percent'].min() - np.abs(df_paper_var['std_percent'].max()) if ylims is None else ylims[0][0]
+            max_val_paper = df_paper_var['mean_percent'].max() + np.abs(df_paper_var['std_percent'].max()) if ylims is None else ylims[0][1]
+            
+            min_val = min(min_val, min_val_paper)
+            min_val = int(min_val) - (int(min_val)%10)
+            max_val = max(max_val, max_val_paper)
+            max_val = int(max_val) + (10 - int(max_val)%10)
+
+            mean_fe = df_var['mean_percent'].values
+            mean_fe_paper = df_paper_var['mean_percent'].values
+            std_fe = df_var['std_percent'].values
+            std_fe_paper = df_paper_var['std_percent'].values 
+            
+            ax = axs[sal_idx, var_idx]
+            p1, = ax.plot(mean_fe, color='#c00000', lw=2.7)
+            p2, = ax.plot(mean_fe_paper, color='#572364', lw=2.7)
+
+            if sal_idx == len(sals) - 1:
+                ax.set_xlabel('Days from Epoch', fontsize=18)
+            if var_idx == 0:
+                ax.set_ylabel(f'Error [%]', color='#000000', fontsize=18)
+
+            ax.tick_params(axis='y', labelcolor='#000000')
+            ax.set_xticks(range(len(mean_fe)))
+            ax.set_xticklabels(range(1, len(mean_fe)+1), fontsize=14)
+            ax.set_ylim(min_val, max_val)
+            steps = (max_val - min_val) / 10
+            ax.set_yticks(np.arange(min_val, max_val, steps))
+            ax.set_yticklabels(np.arange(min_val, max_val, steps), fontsize=14)
+            p3 = ax.fill_between(range(len(mean_fe)), mean_fe - np.abs(std_fe),
+                            mean_fe + np.abs(std_fe),
+                            color='#ff8000', alpha=0.3)
+
+            p4 = ax.fill_between(range(len(mean_fe_paper)), mean_fe_paper - np.abs(std_fe_paper),
+                            mean_fe_paper + np.abs(std_fe_paper),
+                            color='#9a2edb', alpha=0.2)
+
+            n_samples = df_var['n_samples'].values[0] 
+            if sal_idx == 0:
+                ax.set_title(f'{var}.7' , fontweight='bold', fontsize=26, pad=35)
+       
+            ax.text(0, max_val - steps, f'{n_samples} forecasts', fontsize=12, fontstyle='italic')
+            ax.text(2.5, max_val + 1, f'{sal.capitalize()} Solar Activity', fontsize=20, fontstyle='italic', ha='center', )
+
+
+
+            # Draw a grid in the background
+            ax.grid(True, which='both', axis='both', color='lightgrey',
+                    linestyle='-', linewidth=0.5)
+
+    # Create a single legend at the bottom
+    example_mean = ax.plot([], [], color='grey', lw=2.5, label='Mean')[0]
+    example_std = ax.fill_between([], [], [], color='grey', alpha=0.3)
+
+    # Combine handles and labels
+    handles_example = [example_mean, example_std]
+    labels_example = ['Mean', 'STD']
+    measures_legend = fig.legend(handles_example, labels_example, 
+                                loc='upper center', ncol=1, 
+                                fancybox=True, shadow=True, fontsize=18, 
+                                bbox_to_anchor=(0.47, 0.06), title='Measures'
+                                )
+    measures_legend.get_title().set_fontsize('14')
+
+    handles = [(p1, p3), (p2, p4)]
+    labels = ['PatchTST', 'SOLAR2000']
+
+    algorithm_legend = fig.legend(handles, labels, 
+                                  loc='lower center', ncol=1, 
+                                  fancybox=True, shadow=True, fontsize=18, 
+                                  bbox_to_anchor=(0.53, -0.032), title='Forecast Models'
+                                  )
+    algorithm_legend.get_title().set_fontsize('14')
+    plt.subplots_adjust(hspace=0.3) 
+
+    if save_fig:
+        plt.savefig('figures/solfsmy_comparison.png', format='png', bbox_inches='tight', dpi=300)
+
+    plt.show()
+
+# %% ../nbs/utils.ipynb 9
 def bold_best(X, X_ref, higher_better=False, bold_ref_too=False, 
               bold_equal=False, use_abs=False):
     """
@@ -273,7 +379,7 @@ def bold_best(X, X_ref, higher_better=False, bold_ref_too=False,
     else:
         return X
 
-# %% ../nbs/utils.ipynb 10
+# %% ../nbs/utils.ipynb 11
 def convert_uuids_to_indices():
     cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     uuids = re.findall(r"\b[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}\b", cuda_visible_devices)
@@ -282,7 +388,7 @@ def convert_uuids_to_indices():
         indices = [str(i) for i in range(len(uuids))]
         os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(indices)
 
-# %% ../nbs/utils.ipynb 11
+# %% ../nbs/utils.ipynb 12
 def _highlight_better_values(df, our_col, paper_col, stat):
     return np.where(
         np.abs(df[our_col][stat]) < np.abs(df[paper_col][stat]),
@@ -347,7 +453,7 @@ def create_latex_comparison_tables(results_df, forecast_variables, forecast_hori
         )
         print(latex_table)
 
-# %% ../nbs/utils.ipynb 13
+# %% ../nbs/utils.ipynb 14
 def get_classified_columns (df: pd.DataFrame, thresholds:dict, activity_levels:dict):
     """
     Creates classified columns based on predefined ranges for specified columns in the DataFrame.
@@ -371,12 +477,12 @@ def get_classified_columns (df: pd.DataFrame, thresholds:dict, activity_levels:d
             df_cat[f'{column}_Cat'] = np.array(activity_levels[column])[pd.cut(df[column], bins=bins).cat.codes]
         return df_cat
 
-# %% ../nbs/utils.ipynb 15
+# %% ../nbs/utils.ipynb 16
 def euclidean_distance_dict(X:dict, Y:dict):
     return math.sqrt(sum((X.get(d,0) - Y.get(d,0))**2 for d in set(X) | set(Y)))
 
 
-# %% ../nbs/utils.ipynb 17
+# %% ../nbs/utils.ipynb 18
 def find_closest_distribution(df_cat, target_distribution, segment_size, val_size):
     """
     Finds the combination of segments in the categorical data that is closest to the target distribution.
@@ -421,7 +527,7 @@ def find_closest_distribution(df_cat, target_distribution, segment_size, val_siz
     print("The closest group of segments to F10.7 categories has an euclidean distance of", best_distance)
     return best_combination, segments, distribution_found
 
-# %% ../nbs/utils.ipynb 19
+# %% ../nbs/utils.ipynb 20
 def sliding_window_generator(df, split_start, data_columns, config, comb=None, segments=None):
     consecutive_elements, X, y = None, None, None
 
@@ -451,7 +557,7 @@ def sliding_window_generator(df, split_start, data_columns, config, comb=None, s
     splits = L(list(np.arange(split_start, len(X)+split_start)))
     return X, y, splits
 
-# %% ../nbs/utils.ipynb 21
+# %% ../nbs/utils.ipynb 22
 def download_dst_data(start_date: str = '01/1957',
                       end_date: str = pd.Timestamp.today(),
                       save_folder: str = "./dst_data"):
@@ -537,7 +643,7 @@ def download_dst_data(start_date: str = '01/1957',
     return file_path
 
 
-# %% ../nbs/utils.ipynb 24
+# %% ../nbs/utils.ipynb 25
 def generate_preprocessed_data(config, generate_preproc_pipe=True):
     df, preproc_pipe = None, None
     try:
