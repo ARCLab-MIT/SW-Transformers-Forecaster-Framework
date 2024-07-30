@@ -847,20 +847,30 @@ class ValidationMetricsHandler:
     }
 
 
-    def __init__(self, metrics:list):
+    def __init__(self, metrics:list=None):
         self.requested_metrics = {}
-        self.add(metrics)
+        if metrics is not None:
+            self.add(metrics)
 
-    @classmethod
-    def list(cls):
+    def list(self):
         """
         <p>Display a list of available metrics along with their descriptions in a table format.</p>
         """
         table_rows = []
+
+        if not bool(self.requested_metrics):
+            for metric in ValidationMetricsHandler.available_metrics:
+                doc_html = metric.__doc__.strip().replace("\n", " ")
+                table_rows.append(f"<tr><td style='text-align: left;'><strong>{metric.__name__}</strong></td><td style='text-align: left;'>{doc_html}</td></tr>")
+        else:
+            for metric in self.requested_metrics.values():
+                doc_html = metric.__doc__.strip().replace("\n", " ")
+                metric_name = metric.__name__.lower()
+                if metric_name in self.requested_metrics.values():
+                    table_rows.append(f"<tr><td style='text-align: left;'><strong>{metric.__name__}</strong></td><td style='text-align: left;'>{doc_html}</td></tr>")
+                else:
+                    table_rows.append(f"<tr><td style='text-align: left;'>{metric.__name__}</td><td style='text-align: left;'>{doc_html}</td></tr>")
         
-        for metric in cls.available_metrics:
-            doc_html = metric.__doc__.strip().replace("\n", " ")
-            table_rows.append(f"<tr><td style='text-align: left;'><strong>{metric.__name__}</strong></td><td style='text-align: left;'>{doc_html}</td></tr>")
         
         table_html = f"""
         <table>
@@ -877,6 +887,31 @@ class ValidationMetricsHandler:
         """
         
         display(HTML(table_html))
+
+    def _show_metrics(self, metrics:List[AvgMetric]) -> None:
+        metric_column_width = '250px'  # Fixed width to accommodate 'detected_outliers_difference'
+        value_column_width = '100px'   # Fixed width for values up to 12 characters
+        table_rows = []
+        for metric in metrics:
+            value = f"{metric.value:.4f}"
+            table_rows.append(f"<tr><td style='padding: 4px; text-align: left; width: {metric_column_width}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;'><strong>{metric.name}</strong></td><td style='padding: 4px; text-align: right; width: {value_column_width};'>{value}</td></tr>")
+        
+        table_html = f"""
+        <table style='border-collapse: collapse; table-layout: fixed; width: {int(metric_column_width[:-2]) + int(value_column_width[:-2]) + 20}px;'>
+            <thead>
+                <tr>
+                    <th style='padding: 4px; text-align: left; border: 1px solid black; width: {metric_column_width};'>Metric Name</th>
+                    <th style='padding: 4px; text-align: right; border: 1px solid black; width: {value_column_width};'>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                {''.join(table_rows)}
+            </tbody>
+        </table>
+        """
+        
+        display(HTML(table_html))
+
 
 
     # Request of metrics
@@ -943,7 +978,7 @@ class ValidationMetricsHandler:
         """
         return [self.study_directions[metric] for metric in self.requested_metrics.keys()]
     
-    def get_objective_values(self, metrics_results:List[AvgMetric]) -> list:
+    def get_objective_values(self, metrics_results:List[AvgMetric], show_metrics=False) -> list:
         """
         <p>Extract the objective values from the results of the requested metrics.</p>
         
@@ -955,10 +990,12 @@ class ValidationMetricsHandler:
         <h3>Returns:</h3>
         <p>list: A list of metric values extracted from the provided results.</p>
         """
+        if show_metrics:
+            self._show_metrics(metrics_results)
+
         object_values = []
         for metric, requested_metric in zip(metrics_results, self.requested_metrics.keys()):
             metric_name = metric.name.lower()
-
             if metric_name == requested_metric:
                 # As SSPB could be positive or negative, but the better is to be closer to 0
                 if metric_name == 'sspb':
@@ -971,6 +1008,19 @@ class ValidationMetricsHandler:
             
         return (metric_result.value for metric_result in metrics_results)
     
+    def save(self, path:str='tmp/') -> str:
+        """
+        <p>Save the requested metrics to a file to share with the training notebook.</p>
+        
+        <h3>Parameters:</h3>
+        <ul>
+            <li>path (str): The path to save the requested metrics. | <i>Default</i>: tmp</li>
+        </ul>
+        """
+        path = f"{path}metrics.pkl"
+        save_object(self, path)
+
+        return path
 
     @classmethod
     def are_best_values(cls, main_metric: str, best_values, trial_values) -> bool:
