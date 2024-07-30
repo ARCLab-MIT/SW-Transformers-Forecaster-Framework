@@ -752,7 +752,7 @@ class AccuracyMetrics(Metrics):
     
     def MSA(self, y_true, y_pred):
         """
-        Calculate the Mean Scaled Absolute Error (MSA).
+        Calculate the Median Symmetric Accuracy (MSA).
         
         Parameters:
         y_true (torch.Tensor): Actual values tensor of shape (batch_size, variables, horizon)
@@ -993,8 +993,8 @@ class ValidationMetricsHandler:
             return True
 
         if len(best_values) == 1:
-            best_value = best_values[0]
-            trial_value = trial_values[0]
+            best_value = best_values[0].value
+            trial_value = trial_values[0].value
             direction = cls.study_directions.get(main_metric)
 
             if direction == StudyDirection.MAXIMIZE:
@@ -1004,21 +1004,22 @@ class ValidationMetricsHandler:
             return False
 
         improvement_count = 0
+        num_metrics_to_compare = len(best_values) // 2
         for best_metric, trial_metric in zip(best_values, trial_values):
             metric_name = best_metric.name.lower()
             direction = cls.study_directions.get(metric_name)
 
-            if direction == StudyDirection.MAXIMIZE and trial_metric > best_metric:
+            if direction == StudyDirection.MAXIMIZE and trial_metric.value > best_metric.value:
                 if main_metric == metric_name:
-                    improvement_count += len(best_values) // 2
+                    improvement_count += num_metrics_to_compare
                 else:
                     improvement_count += 1
-            elif direction == StudyDirection.MINIMIZE and trial_metric < best_metric:
+            elif direction == StudyDirection.MINIMIZE and trial_metric.value < best_metric.value:
                 if main_metric == metric_name:
-                    improvement_count += len(best_values) // 2
+                    improvement_count += num_metrics_to_compare
                 else:
                     improvement_count += 1
 
-        return improvement_count > len(best_values) // 2
+        return improvement_count > num_metrics_to_compare
             
 
