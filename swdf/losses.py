@@ -109,11 +109,8 @@ class MSLELoss(Loss):
 
     def _compute_loss(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         epsilon = torch.finfo(torch.float32).eps
-        target_scaled = MSLELoss.inverse_scale_values_below_threshold(target, -1, 0.1, epsilon)
-        input_scaled = MSLELoss.inverse_scale_values_below_threshold(input, -1, 0.1, epsilon)
-        
-        target = torch.where(target <= -1, -1 + target_scaled, target)
-        input = torch.where(input <= -1, -1 + input_scaled, input)
+        target_scaled = MSLELoss.inverse_scale_values_below_threshold(target, -1, -1 + epsilon, -0.1)
+        input_scaled = MSLELoss.inverse_scale_values_below_threshold(input, -1, -1 + epsilon, -0.1)
 
         return (torch.log1p(target) - torch.log1p(input))**2
 
@@ -220,11 +217,12 @@ class WeightedLoss(nn.Module, ABC):
         return NotImplementedError
     
     def _preprocess_data(self, thresholds, weights):
-        # If each variable has its own weights, calculate the maximum size of weights.
-        # Padding shorter weights with NaNs prevents heterogeneous tensor errors.
         if (self.all_variables_have_same_weights):
             ranges = np.array(list(thresholds.values())[:])
             weights = np.array(next(iter(weights.values())))
+        
+        # If each variable has its own weights, calculate the maximum size of weights.
+        # Padding shorter weights with NaNs prevents heterogeneous tensor errors.
         else:
             def add_padding(x, padding_value, shape):
                 result = np.full(shape, padding_value)
@@ -380,9 +378,12 @@ class ClassificationLoss(WeightedLoss):
         <li>alpha (float): Weighting factor for balancing the importance of different classes.</li>
     </ul>
     """
-    def __init__(self, thresholds, primary_loss, alpha=0.5):
-        n_variables = len(thresholds.keys())
-        weights = {'All': np.arange(n_variables)}
+    def __init__(self, thresholds, primary_loss, multivar_weights=False, alpha=0.5):
+        if multivar_weights:
+            weights = {key: np.arange(len(thresholds[key])) for key in thresholds.keys()}
+        else:
+            first_values = next(iter(thresholds.values()), None) 
+            weights = {'All': np.arange(len(first_values))}
         super().__init__(thresholds, weights)
 
         self.loss = primary_loss
@@ -536,15 +537,18 @@ class LossFactory:
             else:
                 return LossFactory.losses[available_losses[searched_loss]](thresholds=self.thresholds, weights=self.weights)
 
-        if searched_loss == 'classification':
-            return ClassificationLoss(
-                thresholds=self.thresholds,
-                primary_loss=kwargs.get('primary_loss', MSELoss()),
-                alpha=kwargs.get('alpha', 0.5)
-            )
+        if searched_loss in ['classification', 'trended']:
+            primary_loss = self.create(kwargs.get('primary_loss', 'MSE'), **kwargs)
 
-        if searched_loss == 'trended':
-            return TrendedLoss(primary_loss=kwargs.get('primary_loss', MSELoss()))
+            if searched_loss == 'classification':
+                return ClassificationLoss(
+                    thresholds=self.thresholds,
+                    primary_loss=primary_loss,
+                    multivar_weights=len(self.weights.keys()) > 1,
+                    alpha=kwargs.get('alpha', 0.5)
+                )
+            else:  
+                return TrendedLoss(primary_loss=primary_loss)
 
         if searched_loss == 'hubber':
             return HubberLoss(reduction='mean', delta=kwargs.get('delta', 2.0))

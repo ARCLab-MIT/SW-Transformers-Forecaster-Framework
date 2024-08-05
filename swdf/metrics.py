@@ -3,8 +3,8 @@
 # %% auto 0
 __all__ = ['Metrics', 'RegressiveMetrics', 'SOLFMYMetrics', 'GEODSTAPMetrics', 'ClassificationMetrics',
            'SOLFMYClassificationMetrics', 'GEODSTAPClassificationMetrics', 'LossMetrics', 'OutlierDetectionMetrics',
-           'F1ScoreMetrics', 'AUPRCMetric', 'KSDifferenceMetric', 'AssociationMetrics', 'AccuracyMetrics',
-           'BiasMetrics', 'ValidationMetricsHandler']
+           'F1ScoreMetrics', 'AUPRCMetric', 'KSDifferenceMetric', 'AssociationMetrics',
+           'inverse_scale_values_below_threshold', 'AccuracyMetrics', 'BiasMetrics', 'ValidationMetricsHandler']
 
 # %% ../nbs/metrics.ipynb 0
 import sys
@@ -391,6 +391,8 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
     def __init__(self, threshold=3.5, metrics='F1_Score'):
         super().__init__(threshold)
         self.metrics = metrics
+        self.epsilon = torch.finfo(torch.float32).eps # Used to avoid division per 0
+
     
 
     # Metrics
@@ -410,10 +412,7 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
 
         # To avoid divide by 0
-        if (stats.tp + stats.fp) > 0:
-            precision = stats.tp / (stats.tp + stats.fp)  
-        else: 
-            precision = torch.tensor(0.0)
+        precision = (stats.tp + self.epsilon) / ((stats.tp + stats.fp) + self.epsilon)
 
         return precision
 
@@ -433,10 +432,8 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
 
-        if (stats.tp + stats.fn) > 0:
-            recall = stats.tp / (stats.tp + stats.fn)
-        else: 
-            recall = torch.tensor(0.0)
+        recall = (stats.tp + self.epsilon) / ((stats.tp + stats.fn) + self.epsilon)
+    
 
         return recall
 
@@ -457,10 +454,8 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         precision = self.Precision(y_true, y_pred)
         recall = self.Recall(y_true, y_pred)
 
-        if (precision + recall) > 0:
-            f1_score = 2 * (precision * recall) / (precision + recall)
-        else: 
-            f1_score = torch.tensor(0.0)
+        f1_score = ((2 * (precision * recall)) + self.epsilon) / ((precision + recall) + self.epsilon)
+ 
 
         return f1_score
 
@@ -480,10 +475,8 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
             
-        if (stats.tp + stats.fp + stats.fn + stats.tn) > 0:
-            return (stats.tp + stats.tn) / (stats.tp + stats.fp + stats.fn + stats.tn)
-        else:
-            return torch.tensor(0.0)
+        ((stats.tp + stats.tn) + self.epsilon) / ((stats.tp + stats.fp + stats.fn + stats.tn) + self.epsilon)
+
 
     
     def Specificity(self, y_true, y_pred):
@@ -500,11 +493,9 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         <p>torch.Tensor: Specificity score<p>
         """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
-            
-        if (stats.tn + stats.fp) > 0:
-            return stats.tn / (stats.tn + stats.fp)
-        else:
-            return torch.tensor(0.0)
+        
+        return (stats.tn+ self.epsilon) / ((stats.tn + stats.fp) + self.epsilon)
+
 
 
     def Negative_Predictive_Value(self, y_true, y_pred):
@@ -522,10 +513,8 @@ class F1ScoreMetrics(OutlierDetectionMetrics):
         """
         stats = self._evaluate_outlier_predicted(y_true, y_pred)
 
-        if (stats.tn + stats.fn) > 0:
-            return stats.tn / (stats.tn + stats.fn)
-        else:
-            return torch.tensor(0.0)
+        return (stats.tn + self.epsilon) / ((stats.tn + stats.fn) + self.epsilon)
+  
 
     
     def Detected_Outliers_Difference (self, y_true, y_pred):
@@ -663,6 +652,8 @@ class KSDifferenceMetric(Metrics):
 class AssociationMetrics(Metrics):
     def __init__(self):
         super().__init__()
+        self.epsilon = torch.finfo(torch.float32).eps # Used to avoid division per 0
+
 
     # Metrics
     def R_Correlation(self, y_true, y_pred):
@@ -710,11 +701,9 @@ class AssociationMetrics(Metrics):
         
         # Residual Sum of Squares
         ss_res = torch.sum((y_true - y_pred) ** 2)
+
         
-        if ss_tot == 0:
-            r2 = torch.tensor(0.0)
-        else:
-            r2 = 1 - (ss_res / ss_tot)
+        r2 = 1 - ((ss_res + self.epsilon) / (ss_tot + self.epsilon))
         
         return r2
 
@@ -725,10 +714,34 @@ class AssociationMetrics(Metrics):
     
     
 
-# %% ../nbs/metrics.ipynb 34
+# %% ../nbs/metrics.ipynb 33
+def inverse_scale_values_below_threshold(tensor, threshold, lower_bound, upper_bound):
+    mask = tensor < threshold
+
+    if mask.sum() == 0:
+        # If no values are below the threshold, return the original tensor
+        return tensor
+    
+    values_to_scale = tensor[mask]
+    min_orig = values_to_scale.min()
+    max_orig = values_to_scale.max()
+    
+    if min_orig == max_orig:
+        scaled_values = torch.full_like(tensor, upper_bound)
+    else:
+        scaled_values = upper_bound - (tensor - min_orig) * (upper_bound - lower_bound
+    ) / (max_orig - min_orig)
+    
+    result_tensor = torch.where(mask, scaled_values, tensor)
+    
+    return result_tensor
+
+# %% ../nbs/metrics.ipynb 36
 class AccuracyMetrics(Metrics):
     def __init__(self):
         super().__init__()
+        self.epsilon = torch.finfo(torch.float32).eps # Used to avoid division per 0
+
 
 
     # Metrics
@@ -743,11 +756,10 @@ class AccuracyMetrics(Metrics):
         Returns:
         torch.Tensor: sMAPE value
         """
-        epsilon = 1e-8  # small constant to prevent division by zero
         abs_error = torch.abs(y_true - y_pred)
-        symetric_error = ((torch.abs(y_true) + torch.abs(y_pred)) / 2.0) + epsilon
+        symetric_error = ((torch.abs(y_true) + torch.abs(y_pred)) / 2.0) 
         
-        smape = torch.mean(abs_error / symetric_error) * 100
+        smape = torch.mean((abs_error + self.epsilon)/ (symetric_error + self.epsilon)) * 100
         return smape
     
     def MSA(self, y_true, y_pred):
@@ -761,8 +773,9 @@ class AccuracyMetrics(Metrics):
         Returns:
         torch.Tensor: MSA value
         """
-        # Calculate the natural logarithm of the ratio
-        log_ratio = torch.abs(torch.log(y_pred / y_true))
+        q = (y_pred + self.epsilon) / (y_true + self.epsilon)
+
+        log_ratio = torch.abs(torch.log(inverse_scale_values_below_threshold(q, 0, 0.9, self.epsilon)))
 
         msa = (torch.exp(torch.median(log_ratio)) - 1) * 100
         
@@ -774,10 +787,12 @@ class AccuracyMetrics(Metrics):
         return [self.sMAPE, self.MSA]
 
 
-# %% ../nbs/metrics.ipynb 37
+# %% ../nbs/metrics.ipynb 39
 class BiasMetrics(Metrics):
     def __init__(self):
         super().__init__()
+        self.epsilon = torch.finfo(torch.float32).eps # Used to avoid division per 0
+
 
     # Metrics
     def SSPB(self, y_true, y_pred):
@@ -793,7 +808,9 @@ class BiasMetrics(Metrics):
         <h3>Returns:</h3>
         <p>torch.Tensor: SSPB value<p>
         """
-        log_ratio = torch.log(y_pred / y_true)
+        q = (y_pred + self.epsilon) / (y_true + self.epsilon)
+
+        log_ratio = torch.abs(torch.log(inverse_scale_values_below_threshold(q, 0, 0.9, self.epsilon)))
         median_log_ratio = torch.median(log_ratio)
 
         sign = torch.sign(median_log_ratio)
@@ -806,7 +823,7 @@ class BiasMetrics(Metrics):
     def get_metrics(self) -> list:
         return [self.SSPB]
 
-# %% ../nbs/metrics.ipynb 39
+# %% ../nbs/metrics.ipynb 41
 class ValidationMetricsHandler:
     """
     <p>A class to manage validation metrics for model evaluation. It allows listing available metrics, uploading requested metrics, and retrieving study directions and objective values.</p>
@@ -847,11 +864,15 @@ class ValidationMetricsHandler:
     }
 
 
-    def __init__(self, metrics:list=None):
+    def __init__(self, metrics:list=None, main_metric:str=None):
         self.requested_metrics = {}
         if metrics is not None:
             self.add(metrics)
+            
+        self.main_metric = main_metric
 
+
+    # Visualization functions
     def list(self):
         """
         <p>Display a list of available metrics along with their descriptions in a table format.</p>
@@ -914,7 +935,7 @@ class ValidationMetricsHandler:
 
 
 
-    # Request of metrics
+    # Metrics management functions
     def add(self, metrics:list):
         """
         <p>Upload a list of metrics to the factory for evaluation. The metrics are converted to lowercase for consistency.</p>
@@ -959,7 +980,8 @@ class ValidationMetricsHandler:
                 raise ValueError(f"Metric not found: {metric}. Please use ValidationMetricsFactory.get_metrics() to see requested metrics.")
         
 
-    # Creation functions
+
+    # Metrics utility functions
     def get_metrics(self) -> list:
         """
         <p>Retrieve the list of requested metrics for evaluation.</p>
@@ -1021,9 +1043,31 @@ class ValidationMetricsHandler:
         save_object(self, path)
 
         return path
+    
 
-    @classmethod
-    def are_best_values(cls, main_metric: str, best_values, trial_values) -> bool:
+    # Metrics evaluation functions
+    @staticmethod
+    def _has_improved(trial_value, best_value, direction):
+        """
+        <p>Determine if the trial value has improved over the best value based on the optimization direction.</p>
+        
+        <h3>Parameters:</h3>
+        <ul>
+            <li><b>trial_value</b> (float or int): The value from the current trial to evaluate.</li>
+            <li><b>best_value</b> (float or int): The current best value for comparison.</li>
+            <li><b>direction</b> (StudyDirection): The direction of optimization, either maximizing or minimizing.</li>
+        </ul>
+        
+        <h3>Returns:</h3>
+        <p>bool: True if the trial value represents an improvement over the best value in the given direction, False otherwise.</p>
+        """
+        if direction == StudyDirection.MAXIMIZE:
+            return trial_value > best_value
+        elif direction == StudyDirection.MINIMIZE:
+            return trial_value < best_value
+        return False
+
+    def are_best_values(self, main_metric: str, best_values, trial_values) -> bool:
         """
         <p>Determine if the trial values are better than the current best values for a given metric.</p>
         
@@ -1037,39 +1081,31 @@ class ValidationMetricsHandler:
         <h3>Returns:</h3>
         <p>bool: True if the trial values are overall better than the best values, False otherwise.</p>
         """
-        main_metric = main_metric.lower()
+        cls = ValidationMetricsHandler
 
         if best_values is None:
             return True
 
         if len(best_values) == 1:
-            best_value = best_values[0].value
-            trial_value = trial_values[0].value
-            direction = cls.study_directions.get(main_metric)
-
-            if direction == StudyDirection.MAXIMIZE:
-                return trial_value > best_value
-            elif direction == StudyDirection.MINIMIZE:
-                return trial_value < best_value
-            return False
+            return cls._has_improved(
+                    trial_value=trial_values[0].value, 
+                    best_value=best_values[0].value, 
+                    direction=cls.study_directions.get(self.main_metric)
+                )
 
         improvement_count = 0
-        num_metrics_to_compare = len(best_values) // 2
+        comparison_threshold = len(best_values) // 2
+
         for best_metric, trial_metric in zip(best_values, trial_values):
             metric_name = best_metric.name.lower()
             direction = cls.study_directions.get(metric_name)
 
-            if direction == StudyDirection.MAXIMIZE and trial_metric.value > best_metric.value:
+            if cls._has_improved(trial_metric.value, best_metric.value, direction):
                 if main_metric == metric_name:
-                    improvement_count += num_metrics_to_compare
-                else:
-                    improvement_count += 1
-            elif direction == StudyDirection.MINIMIZE and trial_metric.value < best_metric.value:
-                if main_metric == metric_name:
-                    improvement_count += num_metrics_to_compare
+                    improvement_count += comparison_threshold
                 else:
                     improvement_count += 1
 
-        return improvement_count > num_metrics_to_compare
+        return improvement_count > comparison_threshold
             
 
