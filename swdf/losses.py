@@ -109,8 +109,8 @@ class MSLELoss(Loss):
 
     def _compute_loss(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         epsilon = torch.finfo(torch.float32).eps
-        target_scaled = MSLELoss.inverse_scale_values_below_threshold(target, -1, -1 + epsilon, -0.1)
-        input_scaled = MSLELoss.inverse_scale_values_below_threshold(input, -1, -1 + epsilon, -0.1)
+        target = MSLELoss.inverse_scale_values_below_threshold(target, -1, -0.1, -1 + epsilon)
+        input = MSLELoss.inverse_scale_values_below_threshold(input, -1, -0.1, -1 + epsilon)
 
         return (torch.log1p(target) - torch.log1p(input))**2
 
@@ -367,7 +367,7 @@ class wQuantileLoss(WeightedLoss):
     def loss_measure(self, y_pred, y_true):
         return QuantileLoss(quantile=self.quantile)(y_pred, y_true)
 
-# %% ../nbs/losses.ipynb 23
+# %% ../nbs/losses.ipynb 24
 class ClassificationLoss(WeightedLoss):
     """
     <p>Loss function for classification tasks, suitable for handling imbalanced classes and other classification-specific challenges.</p>
@@ -417,7 +417,7 @@ class ClassificationLoss(WeightedLoss):
         
         return loss
 
-# %% ../nbs/losses.ipynb 25
+# %% ../nbs/losses.ipynb 26
 class TrendedLoss(nn.Module):
     """
     <p>Trended Loss incorporates trends in the data to adjust the loss computation accordingly.</p>
@@ -456,7 +456,7 @@ class TrendedLoss(nn.Module):
 
         return loss
 
-# %% ../nbs/losses.ipynb 27
+# %% ../nbs/losses.ipynb 28
 class LossFactory:
     losses = {
         'MSE': MSELoss,
@@ -551,7 +551,7 @@ class LossFactory:
                 return TrendedLoss(primary_loss=primary_loss)
 
         if searched_loss == 'hubber':
-            return HubberLoss(reduction='mean', delta=kwargs.get('delta', 2.0))
+            return HubberLoss(reduction='mean', delta=kwargs.get('delta', 6.0))
 
         if searched_loss == 'quantile':
             return QuantileLoss(reduction='mean', quantile=kwargs.get('quantile', 0.5))
