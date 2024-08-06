@@ -864,12 +864,12 @@ class ValidationMetricsHandler:
     }
 
 
-    def __init__(self, metrics:list=None, main_metric:str=None):
+    def __init__(self, metrics:list=None, main_metric:str=''):
         self.requested_metrics = {}
         if metrics is not None:
             self.add(metrics)
-            
-        self.main_metric = main_metric
+
+        self.main_metric = main_metric.lower()
 
 
     # Visualization functions
@@ -1067,7 +1067,7 @@ class ValidationMetricsHandler:
             return trial_value < best_value
         return False
 
-    def are_best_values(self, main_metric: str, best_values, trial_values) -> bool:
+    def are_best_values(self, best_values, trial_values) -> bool:
         """
         <p>Determine if the trial values are better than the current best values for a given metric.</p>
         
@@ -1101,7 +1101,7 @@ class ValidationMetricsHandler:
             direction = cls.study_directions.get(metric_name)
 
             if cls._has_improved(trial_metric.value, best_metric.value, direction):
-                if main_metric == metric_name:
+                if self.main_metric == metric_name:
                     improvement_count += comparison_threshold
                 else:
                     improvement_count += 1
