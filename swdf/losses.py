@@ -39,6 +39,9 @@ class Loss(nn.Module, ABC):
         if reduction is not None:
             self.reduction = reduction
         loss = self._compute_loss(input, target)
+
+        loss = torch.clamp(loss, torch.finfo(loss.dtype).min, torch.finfo(loss.dtype).max)
+
         return self._reduce(loss)
 
 # %% ../nbs/losses.ipynb 6
@@ -108,9 +111,9 @@ class MSLELoss(Loss):
         return result_tensor
 
     def _compute_loss(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-        epsilon = torch.finfo(torch.float32).eps
-        target = MSLELoss.inverse_scale_values_below_threshold(target, -1, -0.1, -1 + epsilon)
-        input = MSLELoss.inverse_scale_values_below_threshold(input, -1, -0.1, -1 + epsilon)
+        log1p_min = -1 + torch.finfo(torch.float32).eps
+        target = MSLELoss.inverse_scale_values_below_threshold(target, log1p_min, -0.9, log1p_min)
+        input = MSLELoss.inverse_scale_values_below_threshold(input, log1p_min, -0.9, log1p_min)
 
         return (torch.log1p(target) - torch.log1p(input))**2
 
@@ -129,7 +132,11 @@ class RMSLELoss(nn.Module):
         self.msle_loss = MSLELoss(reduction=reduction)
 
     def forward(self, input: torch.Tensor, target: torch.Tensor, reduction='mean') -> torch.Tensor:
-        return torch.sqrt(self.msle_loss(input, target, reduction))
+        msle = self.msle_loss(input, target, reduction)
+
+        # To avoid errors we clamp the result to the smallest square-rootable value possible
+        msle_clamped = torch.clamp_min(msle, torch.finfo(msle.dtype).tiny)
+        return torch.sqrt(msle_clamped)
 
 # %% ../nbs/losses.ipynb 14
 class HubberLoss(Loss):
@@ -245,12 +252,19 @@ class WeightedLoss(nn.Module, ABC):
         error = self.loss_measure(y_pred, y_true)
         weights = self.weighted_loss_tensor(y_true)
 
+        loss = error * weights
+
+        loss = torch.clamp(
+                    loss, 
+                    torch.finfo(loss.dtype).min, 
+                    torch.finfo(loss.dtype).max 
+            )
+
         if reduction == 'mean':
-            loss = (error * weights).mean()
-        elif reduction == 'sum':
-            loss = (error * weights).sum()
-        else: 
-            loss = error*weights
+            loss = loss.mean()
+        
+        if reduction == 'sum':
+            loss = loss.sum()
         
         return loss
 
@@ -322,10 +336,13 @@ class wRMSLELoss(nn.Module):
     """
     def __init__(self, thresholds, weights):
         super().__init__()
-        self.msle_loss = wMSLELoss(thresholds, weights)
+        self.wmsle_loss = wMSLELoss(thresholds, weights)
         
     def forward(self, input, target, reduction='mean'):
-        return torch.sqrt(self.msle_loss(input, target, reduction))
+        wmsle = self.wmsle_loss(input, target, reduction)
+        
+        wmsle_clamped = torch.clamp_min(wmsle, torch.finfo(wmsle.dtype).tiny)
+        return torch.sqrt(wmsle_clamped)
     
 
 
