@@ -564,6 +564,12 @@ class AUPRCMetric(OutlierDetectionMetrics):
         <h3>Returns:</h3>
         <p>torch.Tensor: AUPRC score<p>
         """
+
+        # We check that there are no NaN values as it would product a AURPC of 0.5 
+        # (no detected outliers), which is not informative
+        if torch.isnan(y_true).any() or torch.isnan(y_pred).any(): 
+            return torch.tensor(0.0, device=y_true.device)
+
         pred_z_scores = self._modified_z_score(y_pred)
         
         pred_z_scores_flat = pred_z_scores.view(-1).cpu().numpy()
@@ -581,7 +587,7 @@ class AUPRCMetric(OutlierDetectionMetrics):
     def get_metrics(self) -> list:
         return [self.AURPC]
 
-# %% ../nbs/metrics.ipynb 28
+# %% ../nbs/metrics.ipynb 29
 class KSDifferenceMetric(Metrics):
     def __init__(self, threshold=3.5):
         super().__init__()
@@ -648,7 +654,7 @@ class KSDifferenceMetric(Metrics):
     def get_metrics(self) -> list:
         return [self.Skewness_Difference, self.Kurtosis_Difference]
 
-# %% ../nbs/metrics.ipynb 31
+# %% ../nbs/metrics.ipynb 32
 class AssociationMetrics(Metrics):
     def __init__(self):
         super().__init__()
@@ -714,7 +720,7 @@ class AssociationMetrics(Metrics):
     
     
 
-# %% ../nbs/metrics.ipynb 33
+# %% ../nbs/metrics.ipynb 34
 def inverse_scale_values_below_threshold(tensor, threshold, lower_bound, upper_bound):
     mask = tensor < threshold
 
@@ -736,7 +742,7 @@ def inverse_scale_values_below_threshold(tensor, threshold, lower_bound, upper_b
     
     return result_tensor
 
-# %% ../nbs/metrics.ipynb 36
+# %% ../nbs/metrics.ipynb 37
 class AccuracyMetrics(Metrics):
     def __init__(self):
         super().__init__()
@@ -787,7 +793,7 @@ class AccuracyMetrics(Metrics):
         return [self.sMAPE, self.MSA]
 
 
-# %% ../nbs/metrics.ipynb 39
+# %% ../nbs/metrics.ipynb 40
 class BiasMetrics(Metrics):
     def __init__(self):
         super().__init__()
@@ -823,7 +829,7 @@ class BiasMetrics(Metrics):
     def get_metrics(self) -> list:
         return [self.SSPB]
 
-# %% ../nbs/metrics.ipynb 41
+# %% ../nbs/metrics.ipynb 42
 class ValidationMetricsHandler:
     """
     <p>A class to manage validation metrics for model evaluation. It allows listing available metrics, uploading requested metrics, and retrieving study directions and objective values.</p>
