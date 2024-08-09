@@ -568,7 +568,7 @@ class AUPRCMetric(OutlierDetectionMetrics):
         # We check that there are no NaN values as it would product a AURPC of 0.5 
         # (no detected outliers), which is not informative
         if torch.isnan(y_true).any() or torch.isnan(y_pred).any(): 
-            return torch.tensor(0.0, device=y_true.device)
+            y_true = torch.nan_to_num(y_true)
 
         pred_z_scores = self._modified_z_score(y_pred)
         
@@ -662,7 +662,7 @@ class AssociationMetrics(Metrics):
 
 
     # Metrics
-    def R_Correlation(self, y_true, y_pred):
+    def R_Correlation(self, y_true, y_pred): 
         """
         <p>Calculate the Pearson Correlation Coefficient (R Correlation) between true and predicted values.</p>
         
@@ -846,12 +846,12 @@ class ValidationMetricsHandler:
         *F1ScoreMetrics(metrics='All').get_metrics(),
         *AUPRCMetric().get_metrics(),
         *KSDifferenceMetric().get_metrics(),
-        *AssociationMetrics().get_metrics(),
+        *AssociationMetrics().get_metrics(),   
         *AccuracyMetrics().get_metrics(),
         *BiasMetrics().get_metrics()
     ]
 
-    study_directions = {
+    study_directions = {        
         'precision': StudyDirection.MAXIMIZE,                    # Higher precision is better (Range: [0, 1])
         'recall': StudyDirection.MAXIMIZE,                       # Higher recall is better (Range: [0, 1])
         'f1_score': StudyDirection.MAXIMIZE,                     # Higher F1 score is better (Range: [0, 1])
@@ -866,7 +866,8 @@ class ValidationMetricsHandler:
         'r2_score': StudyDirection.MAXIMIZE,                     # Higher R² is better (Range: [−∞, 1])
         'smape': StudyDirection.MINIMIZE,                        # Lower SMAPE is better (Range: [0, ∞))
         'msa': StudyDirection.MAXIMIZE,                          # Higher MSA is better (Range: [0, 1])
-        'sspb': StudyDirection.MINIMIZE                          # Minimize absolute SSPB (optimize for bias close to zero) (Range: [−100%, 100%])
+        'sspb': StudyDirection.MINIMIZE,                          # Minimize absolute SSPB (optimize for bias close to zero) (Range: [−100%, 100%])
+        'default': StudyDirection.MINIMIZE
     }
 
 

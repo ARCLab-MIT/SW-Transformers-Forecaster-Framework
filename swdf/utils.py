@@ -649,13 +649,11 @@ def download_dst_data(start_date: str = '01/1957',
 
 
 # %% ../nbs/utils.ipynb 24
-def generate_preprocessed_data(config, generate_preproc_pipe=True):
-    df, preproc_pipe = None, None
+def generate_preprocessed_data(config, generate_preproc_pipe=True, generate_exp_pipe=True):
+    result = []
     try:
         df = load_object(config.df_save_path)
-        if generate_preproc_pipe:
-            preproc_pipe = load_object(config.preproc_pipe_save_path)
-
+ 
     except FileNotFoundError:
         output = './tmp/data_out.ipynb'
         print(f"{config.df_save_path} not found. Executing the notebook to generate the data...")
@@ -663,13 +661,17 @@ def generate_preprocessed_data(config, generate_preproc_pipe=True):
         pm.execute_notebook(config.data_nb, output)
         os.remove(output)
 
-        df = load_object(config.df_save_path)
-        if generate_preproc_pipe:
-            preproc_pipe = load_object(config.preproc_pipe_save_path)
-
         print("Data generated successfully.")
-    
-    return df, preproc_pipe
+
+    results = [load_object(config.df_save_path)]
+
+    if generate_preproc_pipe:
+        results.append(load_object(config.preproc_pipe_save_path))
+
+    if generate_exp_pipe:
+        results.append(load_object(config.exp_pipe_save_path))
+
+    return *results,
 
 # %% ../nbs/utils.ipynb 26
 from pathlib import Path

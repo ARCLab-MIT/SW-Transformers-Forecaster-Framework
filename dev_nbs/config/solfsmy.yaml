@@ -8,6 +8,8 @@ data:
   data_nb: "./solfsmy_data.ipynb"
   df_save_path: "./preprocessed_data/dataframes/solfsmy.pkl"
   preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_solfsmy.pkl"
+  exp_pipe_save_path: "./preprocessed_data/pipelines/preproc_solfsmy.pkl"
+
   data_columns: 
     - F10
     - S10
@@ -25,6 +27,10 @@ data:
 ####################
 train:
   bs: 32
+  loss_func: wMSE
+  loss_config: {}
+  metrics: null
+  main_metric: default
 
 ####################
 ## Eval
