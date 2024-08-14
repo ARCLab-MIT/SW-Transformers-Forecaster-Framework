@@ -11,7 +11,7 @@ from scipy.stats import wasserstein_distance
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 
-# %% ../nbs/preprocessing.ipynb 1
+# %% ../nbs/preprocessing.ipynb 2
 class PolyImputer(BaseEstimator, TransformerMixin):
     def __init__(self, data_columns, degrees=np.arange(2,7), plot=False):
         self.data_columns = data_columns
@@ -73,7 +73,7 @@ class PolyImputer(BaseEstimator, TransformerMixin):
         ax.set_ylim(bottom=0)
         ax.annotate(f'Degree {polynomial.order} Wasserstein distance: {dist}', xy=(0, 20))
 
-# %% ../nbs/preprocessing.ipynb 3
+# %% ../nbs/preprocessing.ipynb 5
 class BackForwardFillMissing(BaseEstimator, TransformerMixin):
     def __init__(self, data_columns):
         self.data_columns = data_columns
