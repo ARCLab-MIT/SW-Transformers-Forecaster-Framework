@@ -18,11 +18,8 @@ from .losses import wMAELoss, MSELoss, WeightedLoss, ClassificationLoss
 from sklearn.metrics import precision_recall_curve, auc
 from optuna.study import StudyDirection
 
-
-
-
 # %% ../nbs/metrics.ipynb 3
-class Metrics(ABC):
+class Metrics(ABC, Metric):
     def __init__(self):
         super().__init__()
 
@@ -866,8 +863,7 @@ class ValidationMetricsHandler:
         'r2_score': StudyDirection.MAXIMIZE,                     # Higher R² is better (Range: [−∞, 1])
         'smape': StudyDirection.MINIMIZE,                        # Lower SMAPE is better (Range: [0, ∞))
         'msa': StudyDirection.MAXIMIZE,                          # Higher MSA is better (Range: [0, 1])
-        'sspb': StudyDirection.MINIMIZE,                          # Minimize absolute SSPB (optimize for bias close to zero) (Range: [−100%, 100%])
-        'default': StudyDirection.MINIMIZE
+        'sspb': StudyDirection.MINIMIZE                          # Minimize absolute SSPB (optimize for bias close to zero) (Range: [−100%, 100%])
     }
 
 

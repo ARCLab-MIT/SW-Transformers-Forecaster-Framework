@@ -384,7 +384,7 @@ class wQuantileLoss(WeightedLoss):
     def loss_measure(self, y_pred, y_true):
         return QuantileLoss(quantile=self.quantile)(y_pred, y_true)
 
-# %% ../nbs/losses.ipynb 24
+# %% ../nbs/losses.ipynb 23
 class ClassificationLoss(WeightedLoss):
     """
     <p>Loss function for classification tasks, suitable for handling imbalanced classes and other classification-specific challenges.</p>
@@ -434,7 +434,7 @@ class ClassificationLoss(WeightedLoss):
         
         return loss
 
-# %% ../nbs/losses.ipynb 26
+# %% ../nbs/losses.ipynb 25
 class TrendedLoss(nn.Module):
     """
     <p>Trended Loss incorporates trends in the data to adjust the loss computation accordingly.</p>
@@ -473,7 +473,7 @@ class TrendedLoss(nn.Module):
 
         return loss
 
-# %% ../nbs/losses.ipynb 28
+# %% ../nbs/losses.ipynb 27
 class LossFactory:
     losses = {
         'MSE': MSELoss,
