@@ -8,15 +8,32 @@ data:
     data_nb: "./geoap_data.ipynb"
     df_save_path: "./preprocessed_data/dataframes/geoap.pkl"
     preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_geoap.pkl"
+    exp_pipe_save_path: "./preprocessed_data/pipelines/exp_geoap.pkl"
+    data_columns: ['AP']
 
 ####################
 ## Train
 ####################
 train:
-  add_time_channels: False # Add time channels to the data (year, day of year)
-  horizon: 48 # default: 6 days * 8 values per day
-  lookback: 144 #  default = 3*horizon
-  partial_n: 0.001
+  n_epoch: 30  # Number of epochs to train for
+  partial_n: .1 # null uses all training set, float in [0,1] uses a percentage, list filters valid too
+  arch_name: "PatchTST" # See `all_arch_names` in tsasi
+  arch_config_file: 'config/patchtst.yaml' # Absolute, or relative to the execution environment. Null for default arch config
+  bs: 128 # Batch size
+  horizon: 24 # same as paper by Licata et al. (2020)
+  init_weights: False  # Kaiming init weights
+  lookback: 96
+  lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
+  metrics_handler_path: null
+  main_metric: default
+  loss_func: wMSE
+
+   # If you are using losses that require from aditional parameters, put them here. Those are:
+   #  - Hubber and wHubber: delta
+   #  - Quantile and wQuantile: quantile
+   #  - Classification: primary_loss (plus all the parameters the primary loss may need), alpha
+   #  - Trended: primary_loss 
+  loss_config: {}
 
 ####################
 ## Eval

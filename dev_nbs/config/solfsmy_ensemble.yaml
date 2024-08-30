@@ -22,32 +22,40 @@ data:
   add_time_channels: False # Add time channels to the data (year, day of year)
 
   
-
 ####################
 ## Train
 ####################
 train:
   n_epoch: 30  # Number of epochs to train for
   partial_n: .1 # null uses all training set, float in [0,1] uses a percentage, list filters valid too
-  arch_name: "PatchTST" # See `all_arch_names` in tsasi
-  arch_config_file: 'config/patchtst.yaml' # Absolute, or relative to the execution environment. Null for default arch config
   bs: 32 # Batch size
+  lookback: 24 
   horizon: 6 # same as paper by Licata et al. (2020)
-  init_weights: False  # Kaiming init weights
-  lookback: 7 
-  lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
   metrics_handler_path: null
   main_metric: default
-  loss_func: wMSE
 
-   # If you are using losses that require from aditional parameters, put them here. Those are:
-   #  - Hubber and wHubber: delta
-   #  - Quantile and wQuantile: quantile
-   #  - Classification: primary_loss (plus all the parameters the primary loss may need), alpha
-   #  - Trended: primary_loss 
-  loss_config: {}
+  learner1:
+    arch_name: "PatchTST" # See `all_arch_names` in tsasi
+    arch_config_file: 'config/patchtst.yaml' # Absolute, or relative to the execution environment. Null for default arch config
+    init_weights: False  # Kaiming init weights
+    lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
+    loss_func: wMSE
 
-
+    # If you are using losses that require from aditional parameters, put them here. Those are:
+    #  - Hubber and wHubber: delta
+    #  - Quantile and wQuantile: quantile
+    #  - Classification: primary_loss (plus all the parameters the primary loss may need), alpha
+    #  - Trended: primary_loss 
+    loss_config: {}
+  
+  learner2:
+    arch_name: "PatchTST" # See `all_arch_names` in tsasi
+    arch_config_file: 'config/patchtst.yaml' # Absolute, or relative to the execution environment. Null for default arch config
+    init_weights: False  # Kaiming init weights
+    lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
+    loss_func: wMAE
+    loss_config: {}
+  
 
 ####################
 ## Eval
