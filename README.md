@@ -83,16 +83,17 @@ Along all the repository we have used [`tsai`](https://github.com/timeseriesAI/t
 This work has been implemented as a collaboration between members of the [Applied Intelligence and Data Analysis research group (AI+DA)](https://aida.etsisi.upm.es/) from Universidad Politécnica de Madrid (UPM) and researchers from [Astrodynamics, Space Robotics, and Controls Lab (ARCLab)](https://aeroastro.mit.edu/arclab/) from the Massachussets Institute of Technology (MIT).
 
 <div align="center">
-  <table>
-    <tr>
-      <td align="center" style="padding-right: 50px;">
+  <table style="border-collapse: collapse; border: none;">
+    <tr style="border: none;">
+      <td align="center" style="padding-right: 50px; border: none;">
         <img src=".images/AIDA_logo.png" alt="AI+DA Logo" width="215"/><br/>
         <img src=".images/UPM_Logo.png" alt="UPM Logo" width="205"/>
       </td>
-      <td align="center" style="padding-left: 50px;">
+      <td align="center" style="padding-left: 50px; border: none;">
         <img src=".images/Lab-ARC-Logo-homepage.png" alt="ARCLab Logo" width="400"/><br/>
         <img src=".images/MIT_Logo.png" alt="MIT Logo" width="400"/>
       </td>
     </tr>
   </table>
 </div>
+
