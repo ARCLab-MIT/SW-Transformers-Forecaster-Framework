@@ -1,16 +1,8 @@
-arch_name: "PatchTST" # See `all_arch_names` in tsasi
-arch_config_file: 'config/patchtst.yaml' # Absolute, or relative to the execution environment. Null for default arch config
-bs: 1024 # Batch size
-horizon: 6 # same as paper by Licata et al. (2020)
-init_weights: False  # Kaiming init weights
-lookback: 36 
-lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
-n_epoch: 25 # Number of epochs to train for
-partial_n: .1 # null uses all training set, float in [0,1] uses a percentage, list filters valid too
 seed: 42 # Random seed (null for random)
-test_start_datetime: '2012-10-01' # Benchmark test set by Licata et al. (2020)
-test_end_datetime: '2018-12-31' # Benchmark test set by Licata et al. (2020) 
-valid_start_datetime: '2019-01-01'
+test_start_datetime: '2012-10-01 12:00:00' # Benchmark test set by Licata et al. (2020)
+test_end_datetime: '2018-12-31 12:00:00' # Benchmark test set by Licata et al. (2020) 
+valid_start_datetime: '2018-01-01 12:00:00' # Benchmark validation set by Licata et al. (2020)
+is_optuna_study: False # Because thes file is only use during a normal run, it is not an optuna_study.
 wandb:
   enabled: False # To use it, the environment variable WANDB_API_KEY must be set
   log_learner: True # Log learner to wandb

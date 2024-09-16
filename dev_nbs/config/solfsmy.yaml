@@ -1,16 +1,53 @@
 ####################
-## Train
+## Data
 ####################
-train:
-  add_time_channels: False # Add time channels to the data (year, day of year)
-  data_columns_fcst: # Columns to use for forecasting
+data:
+  data_url: 'https://sol.spacenvironment.net/JB2008/indices/SOLFSMY.TXT'
+  data_path: '../data/SOLFSMY.TXT'
+  force_download: False
+  data_nb: "./solfsmy_data.ipynb"
+  df_save_path: "./preprocessed_data/dataframes/solfsmy.pkl"
+  preproc_pipe_save_path: "./preprocessed_data/pipelines/preproc_solfsmy.pkl"
+  exp_pipe_save_path: "./preprocessed_data/pipelines/exp_solfsmy.pkl"
+  
+  # Data columns 
+  data_columns: 
     - F10
     - S10
     - M10
     - Y10
-  data_url: 'https://sol.spacenvironment.net/jb2008/indices/SOLFSMY.TXT'
-  data_path: '../data/SOLFSMY.TXT'
-  bs: 32
+  data_time_columns:
+    - Year
+    - DDD
+  add_time_channels: False # Add time channels to the data (year, day of year)
+
+  
+
+####################
+## Train
+####################
+train:
+  n_epoch: 30  # Number of epochs to train for
+  partial_n: .1 # null uses all training set, float in [0,1] uses a percentage, list filters valid too
+  arch_name: "PatchTST" # See `all_arch_names` in tsasi
+  arch_config_file: 'config/patchtst.yaml' # Absolute, or relative to the execution environment. Null for default arch config
+  bs: 32 # Batch size
+  horizon: 6 # same as paper by Licata et al. (2020)
+  init_weights: False  # Kaiming init weights
+  lookback: 7 
+  lr_max: null # Maximum learning rate. If none, it will be computed with fastai's LRFinder
+  metrics_handler_path: null
+  main_metric: default
+  loss_func: wMSE
+
+   # If you are using losses that require from aditional parameters, put them here. Those are:
+   #  - Hubber and wHubber: delta
+   #  - Quantile and wQuantile: quantile
+   #  - Classification: primary_loss (plus all the parameters the primary loss may need), alpha
+   #  - Trended: primary_loss 
+  loss_config: {}
+
+
 
 ####################
 ## Eval
@@ -20,10 +57,11 @@ eval:
   # If null, the learner in the local tmp folder will be used
   # learner_artifact: "vrodriguezf90/swdf/solfsmy:latest"
   dst_data_path: '../data/DST_IAGA2002.txt' # SAME USED TO TRAIN THE LEARNER!
+
   # Path to learner wandb artifact to load (project/entity/run/artifact:version)
   # If null, the learner in the local tmp folder will be used
   learner_artifact: null
   round_preds: True # Round predictions to the nearest integer
+  
   # Path to the F10.7 data
   solfsmy_data_path: '../data/SOLFSMY.TXT'
-  

@@ -9,7 +9,7 @@
 			// Update 'VARIANT' to pick a Python version: 3, 3.10, 3.9, 3.8, 3.7, 3.6
 			// Append -bullseye or -buster to pin to an OS version.
 			// Use -bullseye variants on local on arm64/Apple Silicon.
-			"VARIANT": "3.9-bullseye",
+			"VARIANT": "3.10-bullseye",
 			// Options
 			"NODE_VERSION": "none"
 		}
@@ -46,6 +46,7 @@
 			]
 		}
 	},
+	
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
@@ -56,15 +57,17 @@
 		"git": "latest",
 		"ghcr.io/meaningful-ooo/devcontainer-features/fish:1": {},
 		"ghcr.io/devcontainers/features/python:1": {
-			"installTools": false, // TODO: Enabling this causes the container to fail to build
+			"installTools": false, 
 			"installJupyterlab": true
 		},
 		"ghcr.io/devcontainers/features/nvidia-cuda:1": {
 			"installCudnn": true
 		}
 	},
-	// "runArgs": ["--env-file", ".devcontainer/devcontainer.env"]
-	"runArgs": ["--env-file", ".devcontainer/devcontainer.env", "--gpus", "all"] // For machines with GPUs
+	
+	// Check if a GPU is available in the host machine and if so, pass the --gpus all flag to the docker run command
+	"initializeCommand": "if [ $(ls -la /dev | grep -iqE 'nvidia|radeon' | echo $?) -eq 0 ]; then export EXISTS_GPU; else echo 'No GPUs detected.' >&2; fi",
+	"runArgs": ["--env-file", ".devcontainer/devcontainer.env", "${localEnv: EXISTS_GPU:--gpus}","${localEnv: EXISTS_GPU:all}"]
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	//"postCreateCommand": "pip install --user -r requirements.txt"

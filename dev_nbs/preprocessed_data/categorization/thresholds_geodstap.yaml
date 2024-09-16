@@ -1,0 +1,29 @@
+AP:
+- !!python/tuple
+  - -.inf
+  - 10
+- !!python/tuple
+  - 10
+  - 50
+- !!python/tuple
+  - 50
+  - .inf
+DST:
+- !!python/tuple
+  - -30
+  - .inf
+- !!python/tuple
+  - -50
+  - -30
+- !!python/tuple
+  - -90
+  - -50
+- !!python/tuple
+  - -130
+  - -90
+- !!python/tuple
+  - -350
+  - -130
+- !!python/tuple
+  - -.inf
+  - -350

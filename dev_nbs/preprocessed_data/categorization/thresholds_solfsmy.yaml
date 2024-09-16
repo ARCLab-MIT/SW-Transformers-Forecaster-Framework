@@ -1,0 +1,52 @@
+F10:
+- !!python/tuple
+  - 0
+  - 75
+- !!python/tuple
+  - 76
+  - 150
+- !!python/tuple
+  - 151
+  - 190
+- !!python/tuple
+  - 191
+  - 99999
+S10:
+- !!python/tuple
+  - 0
+  - 65
+- !!python/tuple
+  - 66
+  - 150
+- !!python/tuple
+  - 151
+  - 215
+- !!python/tuple
+  - 216
+  - 99999
+M10:
+- !!python/tuple
+  - 0
+  - 72
+- !!python/tuple
+  - 73
+  - 144
+- !!python/tuple
+  - 145
+  - 167
+- !!python/tuple
+  - 168
+  - 99999
+Y10:
+- !!python/tuple
+  - 0
+  - 81
+- !!python/tuple
+  - 82
+  - 148
+- !!python/tuple
+  - 149
+  - 165
+- !!python/tuple
+  - 166
+  - 99999

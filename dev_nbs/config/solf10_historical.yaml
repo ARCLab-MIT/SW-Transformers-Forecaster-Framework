@@ -1,0 +1,8 @@
+####################
+## F10.7 Historical Values
+####################
+data_url: 'https://www.ngdc.noaa.gov/stp/space-weather/solar-data/solar-features/solar-radio/noontime-flux/penticton/penticton_adjusted/listings/listing_drao_noontime-flux-adjusted_daily.txt'
+data_path: '../data/SOLF107_HistoricalValues.txt' 
+force_download: False
+data_nb: "./solf10_historical_data.ipynb"
+data_save_path: "./preprocessed_data/dataframes/F10_historical.pkl"

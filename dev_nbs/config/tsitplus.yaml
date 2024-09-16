@@ -1,0 +1,19 @@
+d_model: 512  # Moderate model size for balance between efficiency and learning capacity. [1]
+depth: 8  # Increased depth for capturing complex temporal dependencies. [2]
+n_heads: 8  # 8 attention heads to maintain computational efficiency and effective multi-head attention. [1]
+lsa: True  # Locality-Sensitive Attention improves focus on nearby elements in sequences, beneficial for time series.
+attn_dropout: 0.1  # Dropout in attention layers to prevent overfitting while retaining attention focus. [3]
+dropout: 0.2  # General dropout for robust performance and overfitting prevention. [3]
+# mlp_ratio: 4  # Larger MLP ratio increases model capacity for non-linear transformations. [4]
+# pre_norm: True  # Pre-normalization stabilizes training, especially important in deeper models.
+# use_pe: True  # Positional encoding is critical for maintaining the sequential order in time series data.
+# token_size: 16  # Optimal token size for capturing sufficient context without overwhelming the model.
+use_bn: True  # Batch normalization stabilizes training by normalizing inputs, beneficial for time series variance.
+
+#########
+# References
+#########
+# [1] Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., ... & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30. doi:10.48550/arXiv.1706.03762
+# [2] Zerveas, G., Jayaraman, S., Patel, D., Bhamidipaty, A., & Eickhoff, C. (2021). A transformer-based framework for multivariate time series representation learning. Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery & Data Mining. doi:10.48550/arXiv.2010.02803
+# [3] Srivastava, N., Hinton, G., Krizhevsky, A., Sutskever, I., & Salakhutdinov, R. (2014). Dropout: A simple way to prevent neural networks from overfitting. Journal of Machine Learning Research, 15(56), 1929-1958. doi:10.5555/2627435.2670313
+# [4] Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, T., ... & Houlsby, N. (2020). An image is worth 16x16 words: Transformers for image recognition at scale. International Conference on Learning Representations. doi:10.48550/arXiv.2010.11929
