@@ -1,8 +1,11 @@
 <h1 align="center">Solar and Geomagnetic Indices Forecasting Framework Using Transformers</h1>
 
-<p align="center">
+<p align="center"
     <a href="https://arxiv.org/abs/2406.15847">
-        <img src="https://gist.githubusercontent.com/SSHurtado/06a49136a671264108a900bb78f7ac16/raw/dc6d1c7c29b223aef9dbacf9895b9700b19167e8/arXive_badge.svg" alt="arXiv Link" />
+        <img alt="arXive DOI" src="https://gist.githubusercontent.com/SSHurtado/06a49136a671264108a900bb78f7ac16/raw/dc6d1c7c29b223aef9dbacf9895b9700b19167e8/arXive_badge.svg" alt="arXiv Link" />
+    </a>
+    <a href="https://zenodo.org/records/13885507">
+        <img alt="Zenodo DOI" src="https://img.shields.io/badge/Zenodo-10.5281%2Fzenodo.13885507-blue?logo=zenodo&labelColor=%238EBB49ff&color=%23326DAFff">
     </a>
 </p>
 
